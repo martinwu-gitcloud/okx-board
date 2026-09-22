@@ -102,7 +102,18 @@
     .down { color: var(--down); }
     .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 10px; font-size: 12px; color: var(--muted); }
     .stats b { display: block; color: var(--text); margin-top: 2px; font-size: 12.5px; font-weight: 600; }
-    canvas { width: 100%; height: 96px; margin-top: 8px; background: #10151f; border-radius: 8px; }
+    canvas { display: block; width: 100%; height: 120px; margin: 0; background: transparent; }
+    .chart-box { margin-top: 8px; background: #10151f; border-radius: 8px; overflow: hidden; }
+    .book {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 0 10px;
+      margin-top: 6px; padding: 6px 8px;
+      background: #10151f; border-radius: 8px;
+      font-size: 11px; color: var(--muted);
+    }
+    .book .col { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .book .row { display: flex; justify-content: space-between; gap: 6px; }
+    .book .row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .book .hd { font-size: 10px; color: #6b778c; margin-bottom: 2px; }
     .flow { margin-top: 10px; }
     .flow-bar { height: 8px; border-radius: 99px; background: #2a3344; overflow: hidden; display: flex; }
     .flow-bar .buy { background: var(--green); height: 100%; }
@@ -113,12 +124,8 @@
       max-height: 58px; overflow: auto;
       font-size: 11px; line-height: 1.4; color: var(--muted);
     }
-    .book {
-      display:grid; grid-template-columns:1fr 1fr; gap:4px 8px;
-      font-size:11px; color:var(--muted); margin-top:6px;
-    }
-    .book b { font-weight:600; }
-    .mini-row { display:flex; justify-content:space-between; gap:6px; font-size:11px; color:var(--muted); margin-top:6px; }
+    .book b { font-weight:600; color: var(--text); }
+    .mini-row { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:6px; font-size:11px; color:var(--muted); margin-top:6px; }
     .heat { display:flex; flex-wrap:wrap; gap:4px; }
     .heat i { display:block; min-width:46px; padding:6px 4px; border-radius:6px; text-align:center; font-size:11px; font-style:normal; color:#fff; }
     .fund-list, .liq-list, .rs-list { font-size:12px; line-height:1.7; max-height:148px; overflow:auto; }
@@ -597,10 +604,13 @@ async function loadLiq(id) {
 function bookHtml(d) {
   const bids = (d.books && d.books.bids || []).slice(0, 3);
   const asks = (d.books && d.books.asks || []).slice(0, 3);
-  if (!bids.length && !asks.length) return `<span>买一 ${fmtPx(d.bid)}</span><span style="text-align:right">卖一 ${fmtPx(d.ask)}</span>`;
-  const left = bids.map(x => `<div class="up">${fmtPx(x[0])} <b>${fmtVol(x[1])}</b></div>`).join("");
-  const right = asks.map(x => `<div class="down" style="text-align:right">${fmtPx(x[0])} <b>${fmtVol(x[1])}</b></div>`).join("");
-  return left + right;
+  const bidRows = (bids.length ? bids : [[d.bid, ""]]).map(x =>
+    `<div class="row up"><span>${fmtPx(x[0])}</span><span>${x[1] === "" ? "" : fmtVol(x[1])}</span></div>`
+  ).join("");
+  const askRows = (asks.length ? asks : [[d.ask, ""]]).map(x =>
+    `<div class="row down"><span>${fmtPx(x[0])}</span><span>${x[1] === "" ? "" : fmtVol(x[1])}</span></div>`
+  ).join("");
+  return `<div class="col"><div class="hd">买盘</div>${bidRows}</div><div class="col"><div class="hd">卖盘</div>${askRows}</div>`;
 }
 
 function ensure(instId) {
@@ -804,7 +814,7 @@ function cardHtml(id) {
         <span>多空比 <b>${d.lsRatio != null ? Number(d.lsRatio).toFixed(2) : "--"}</b></span>
         <span>结算 <b>${fundEtaShort(d.nextFund)}</b></span>
       </div>
-      <canvas data-chart="${id}" width="640" height="160"></canvas>
+      <div class="chart-box"><canvas data-chart="${id}" width="640" height="160"></canvas></div>
       <div class="book">${bookHtml(d)}</div>
       <div class="flow">
         <div class="flow-bar"><div class="buy" style="width:${flowInfo(d).buyPct}%"></div><div class="sell" style="width:${flowInfo(d).sellPct}%"></div></div>
