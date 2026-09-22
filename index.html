@@ -66,13 +66,14 @@
     .chip:hover { color: var(--text); border-color: #4a5870; }
     .meta { padding: 8px 18px; color: var(--muted); font-size: 12px; display: flex; gap: 16px; flex-wrap: wrap; }
     .grid {
-      display: grid; gap: 12px; padding: 8px 18px 28px;
-      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+      display: grid; gap: 10px; padding: 8px 18px 28px;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
     }
     .card {
       background: linear-gradient(180deg, var(--card), #131924);
       border: 1px solid var(--line); border-radius: 14px; padding: 14px;
       box-shadow: 0 8px 24px rgba(0,0,0,.18); cursor: pointer;
+      padding: 10px 12px;
     }
     .card.active { border-color: #4c8dff; box-shadow: 0 0 0 1px #4c8dff55; }
     .card-head { display: flex; align-items: center; gap: 10px; }
@@ -94,14 +95,14 @@
     }
     .remove:hover { color: var(--red); }
     .price-row { display: flex; justify-content: space-between; align-items: baseline; margin-top: 10px; }
-    .last { font-size: 26px; font-weight: 700; letter-spacing: .3px; }
+    .last { font-size: 22px; font-weight: 700; letter-spacing: .3px; }
     .chg { font-size: 14px; font-weight: 700; text-align: right; }
     .chg small { display:block; font-size:10px; font-weight:500; color:var(--muted); margin-top:2px; }
     .up { color: var(--up); }
     .down { color: var(--down); }
     .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 10px; font-size: 12px; color: var(--muted); }
     .stats b { display: block; color: var(--text); margin-top: 2px; font-size: 12.5px; font-weight: 600; }
-    canvas { width: 100%; height: 220px; margin-top: 10px; background: #10151f; border-radius: 8px; }
+    canvas { width: 100%; height: 96px; margin-top: 8px; background: #10151f; border-radius: 8px; }
     .flow { margin-top: 10px; }
     .flow-bar { height: 8px; border-radius: 99px; background: #2a3344; overflow: hidden; display: flex; }
     .flow-bar .buy { background: var(--green); height: 100%; }
@@ -109,8 +110,24 @@
     .flow-meta { display: flex; justify-content: space-between; font-size: 12px; margin-top: 6px; color: var(--muted); }
     .alert-row { display: grid; grid-template-columns: 1.15fr .85fr; gap: 8px; margin-top: 8px; }
     .alerts {
-      max-height: 118px; overflow: auto;
-      font-size: 12px; line-height: 1.55; color: var(--muted);
+      max-height: 58px; overflow: auto;
+      font-size: 11px; line-height: 1.4; color: var(--muted);
+    }
+    .book {
+      display:grid; grid-template-columns:1fr 1fr; gap:4px 8px;
+      font-size:11px; color:var(--muted); margin-top:6px;
+    }
+    .book b { font-weight:600; }
+    .mini-row { display:flex; justify-content:space-between; gap:6px; font-size:11px; color:var(--muted); margin-top:6px; }
+    .heat { display:flex; flex-wrap:wrap; gap:4px; }
+    .heat i { display:block; min-width:46px; padding:6px 4px; border-radius:6px; text-align:center; font-size:11px; font-style:normal; color:#fff; }
+    .fund-list, .liq-list, .rs-list { font-size:12px; line-height:1.7; max-height:148px; overflow:auto; }
+    .tv-dock.collapsed .tv-body { display:none; }
+    .tv-extras { display:grid; grid-template-columns:1fr 1fr; min-height:320px; border-top:1px solid var(--line); }
+    .tv-extras > div { min-height:320px; }
+    .intel {
+      display:grid; grid-template-columns: repeat(4, minmax(0,1fr));
+      gap:10px; padding:10px 18px 0;
     }
     .event-avg {
       background: #10151f; border: 1px solid var(--line); border-radius: 8px; padding: 8px;
@@ -136,8 +153,7 @@
     .ai-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
     .ai-title { font-size: 12px; color: var(--muted); }
     .ai-bias { font-size: 16px; font-weight: 800; }
-    .ai-range { margin-top: 6px; font-size: 12px; color: var(--muted); }
-    .ai-strats { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 5px; }
+    .ai-range, .ai-strats { display: none; }
     .tag {
       font-size: 11px; padding: 2px 7px; border-radius: 999px;
       border: 1px solid #334056; color: var(--muted);
@@ -189,6 +205,10 @@
     .d-eth { background:#4c8dff; }
     .d-oth { background:#6b778c; }
     .ov-row { display:flex; justify-content:space-between; gap:8px; font-size:12px; color:var(--muted); margin-top:8px; }
+    @media (max-width: 1280px) {
+      .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .intel { grid-template-columns: 1fr 1fr; }
+    }
     @media (max-width: 1100px) {
       .overview { grid-template-columns: 1fr 1fr; }
     }
@@ -203,7 +223,9 @@
       .status { margin-left: 0; width: 100%; }
       .chips, .meta, .feed, .grid, footer { padding-left: 12px; padding-right: 12px; }
       .grid { grid-template-columns: 1fr; }
-      canvas { height: 180px; }
+      canvas { height: 120px; }
+      .intel { grid-template-columns: 1fr; }
+      .tv-extras { grid-template-columns: 1fr; }
       .last { font-size: 22px; }
       .remove { padding: 8px 10px; }
       .alert-row { grid-template-columns: 1fr; }
@@ -238,13 +260,27 @@
       </select>
       <button class="ghost" id="resetBtn">只留 BTC/ETH</button>
       <button class="ghost" id="copyLinkBtn">复制同步链接</button>
+      <button class="ghost" id="tvToggle">展开图表</button>
     </div>
     <div class="status">
       <span><i id="pubDot" class="dot off"></i>行情</span>
       <span><i id="bizDot" class="dot off"></i>K线</span>
     </div>
   </header>
-  <div class="tv-tape" id="tvTape"></div>
+  <section class="tv-wrap tv-dock collapsed" id="tvDock">
+    <div class="tv-head">
+      <span>TradingView · <b id="tvLabel">OKX:BTCUSDT.P</b> · 点击卡片切换</span>
+      <span>默认收起，给四张卡片留屏</span>
+    </div>
+    <div class="tv-body">
+      <div class="tv-tape" id="tvTape"></div>
+      <div id="tvChart"></div>
+      <div class="tv-extras">
+        <div id="tvTa"></div>
+        <div id="tvCal"></div>
+      </div>
+    </div>
+  </section>
 
   <section class="overview" id="overview">
     <div class="obox">
@@ -289,12 +325,23 @@
       <div class="tbox"><div class="k">最近开仓</div><div class="v" id="wrLast">--</div></div>
     </div>
   </section>
-  <section class="tv-wrap">
-    <div class="tv-head">
-      <span>TradingView · <b id="tvLabel">OKX:BTCUSDT.P</b> · 点击卡片切换</span>
-      <span>时区 Asia/Shanghai</span>
+  <section class="intel" id="intel">
+    <div class="obox">
+      <div class="olabel">资金费率 · 距下次结算 <b id="fundEta">--</b></div>
+      <div class="fund-list" id="fundList">加载中</div>
     </div>
-    <div id="tvChart"></div>
+    <div class="obox">
+      <div class="olabel">自选涨跌热力图 · 相对早8点</div>
+      <div class="heat" id="heatMap">加载中</div>
+    </div>
+    <div class="obox">
+      <div class="olabel">爆仓热力 · 近1小时多空爆仓</div>
+      <div class="liq-list" id="liqList">加载中</div>
+    </div>
+    <div class="obox">
+      <div class="olabel">相对 BTC 强弱 · 多空人数比</div>
+      <div class="rs-list" id="rsList">加载中</div>
+    </div>
   </section>
   <div class="meta">
     <span>数据源：OKX 永续 SWAP</span>
@@ -477,12 +524,55 @@ function chgOf(d) {
   if (!d.last || !base) return NaN;
   return (d.last - base) / base * 100;
 }
+function btcChg() {
+  return chgOf(ensure("BTC-USDT-SWAP"));
+}
+function rsOf(id) {
+  const c = chgOf(ensure(id));
+  const b = btcChg();
+  if (!isFinite(c) || !isFinite(b)) return NaN;
+  return c - b;
+}
+function fmtRs(id) {
+  const x = rsOf(id);
+  if (!isFinite(x)) return "--";
+  return (x >= 0 ? "+" : "") + x.toFixed(2) + "%";
+}
+function rsClass(id) {
+  const x = rsOf(id);
+  return isFinite(x) ? (x >= 0 ? "up" : "down") : "";
+}
+function oiCls(d) {
+  if (!d.oi || !d.oiPrev) return "";
+  return d.oi >= d.oiPrev ? "up" : "down";
+}
+function fmtOiChg(d) {
+  if (!d.oi || !d.oiPrev) return "--";
+  return fmtChg((d.oi - d.oiPrev) / d.oiPrev * 100);
+}
+function fundEtaShort(ts) {
+  if (!ts) return "--";
+  const ms = ts - Date.now();
+  if (ms <= 0) return "结算中";
+  const m = Math.floor(ms / 60000);
+  return Math.floor(m / 60) + "h" + String(m % 60).padStart(2, "0") + "m";
+}
+function bookHtml(d) {
+  const bids = (d.books && d.books.bids || []).slice(0, 3);
+  const asks = (d.books && d.books.asks || []).slice(0, 3);
+  if (!bids.length && !asks.length) return `<span>买一 ${fmtPx(d.bid)}</span><span style="text-align:right">卖一 ${fmtPx(d.ask)}</span>`;
+  const left = bids.map(x => `<div class="up">${fmtPx(x[0])} <b>${fmtVol(x[1])}</b></div>`).join("");
+  const right = asks.map(x => `<div class="down" style="text-align:right">${fmtPx(x[0])} <b>${fmtVol(x[1])}</b></div>`).join("");
+  return left + right;
+}
 
 function ensure(instId) {
   if (!state.data[instId]) {
     state.data[instId] = {
       last:null, open24h:null, open8:null, high24h:null, low24h:null, vol24h:null,
-      funding:null, candles:[], flash:null,
+      funding:null, nextFund:null, oi:null, oiPrev:null, lsRatio:null,
+      liqLong:0, liqShort:0, books:null,
+      candles:[], flash:null,
       trades:[], buyWin:0, sellWin:0, events:[], h1:[], d1:[]
     };
   }
@@ -589,6 +679,7 @@ function render() {
     return;
   }
   ids.forEach(patchCard);
+  renderIntel();
 }
 
 function patchCard(id) {
@@ -611,8 +702,15 @@ function patchCard(id) {
     stats[3].className = Number(d.funding) >= 0 ? "up" : "down";
     stats[3].textContent = fmtFund(d.funding);
   }
-  if (stats[4]) stats[4].textContent = fmtPx(d.bid);
-  if (stats[5]) stats[5].textContent = fmtPx(d.ask);
+  if (stats[4]) {
+    stats[4].className = rsClass(id);
+    stats[4].textContent = fmtRs(id);
+  }
+  if (stats[5]) stats[5].textContent = fmtUsd(d.oi);
+  const mini = card.querySelector(".mini-row");
+  if (mini) mini.innerHTML = `<span>OI变化 <b class="${oiCls(d)}">${fmtOiChg(d)}</b></span><span>多空比 <b>${d.lsRatio != null ? Number(d.lsRatio).toFixed(2) : "--"}</b></span><span>结算 <b>${fundEtaShort(d.nextFund)}</b></span>`;
+  const bk = card.querySelector(".book");
+  if (bk) bk.innerHTML = bookHtml(d);
   const flow = flowInfo(d);
   const buyEl = card.querySelector(".flow-bar .buy");
   const sellEl = card.querySelector(".flow-bar .sell");
@@ -661,10 +759,16 @@ function cardHtml(id) {
         <div>24h低 <b>${fmtPx(d.low24h)}</b></div>
         <div>24h量 <b>${fmtVol(d.vol24h)}</b></div>
         <div>资金费率 <b class="${Number(d.funding)>=0?'up':'down'}">${fmtFund(d.funding)}</b></div>
-        <div>买一 <b>${fmtPx(d.bid)}</b></div>
-        <div>卖一 <b>${fmtPx(d.ask)}</b></div>
+        <div>相对BTC <b class="${rsClass(id)}">${fmtRs(id)}</b></div>
+        <div>持仓OI <b>${fmtUsd(d.oi)}</b></div>
       </div>
-      <canvas data-chart="${id}" width="800" height="360"></canvas>
+      <div class="mini-row">
+        <span>OI变化 <b class="${oiCls(d)}">${fmtOiChg(d)}</b></span>
+        <span>多空比 <b>${d.lsRatio != null ? Number(d.lsRatio).toFixed(2) : "--"}</b></span>
+        <span>结算 <b>${fundEtaShort(d.nextFund)}</b></span>
+      </div>
+      <canvas data-chart="${id}" width="640" height="160"></canvas>
+      <div class="book">${bookHtml(d)}</div>
       <div class="flow">
         <div class="flow-bar"><div class="buy" style="width:${flowInfo(d).buyPct}%"></div><div class="sell" style="width:${flowInfo(d).sellPct}%"></div></div>
         <div class="flow-meta">
@@ -1074,7 +1178,15 @@ function handleMsg(raw) {
   const ch = msg.arg.channel;
   if (ch === "tickers") msg.data.forEach(applyTicker);
   else if (ch === "funding-rate") {
-    msg.data.forEach(x => { ensure(x.instId).funding = Number(x.fundingRate); });
+    msg.data.forEach(x => {
+      const d = ensure(x.instId);
+      d.funding = Number(x.fundingRate);
+      if (x.nextFundingTime) d.nextFund = Number(x.nextFundingTime);
+    });
+  } else if (ch === "books5") {
+    const id = msg.arg.instId;
+    const row = msg.data && msg.data[0];
+    if (row) ensure(id).books = { bids: row.bids || [], asks: row.asks || [] };
   } else if (ch === "trades") {
     msg.data.forEach(applyTrade);
   } else if (ch === "candle1H") {
@@ -1106,6 +1218,7 @@ function subscribePublic() {
     args.push({ channel: "tickers", instId: id });
     args.push({ channel: "funding-rate", instId: id });
     args.push({ channel: "trades", instId: id });
+    args.push({ channel: "books5", instId: id });
   });
   chunkSend(state.pub, args);
 }
@@ -1189,6 +1302,117 @@ function mountTape() {
   });
   el.appendChild(s);
 }
+function heatColor(chg) {
+  if (!isFinite(chg)) return "#2a3344";
+  const t = Math.max(-6, Math.min(6, chg)) / 6;
+  if (t >= 0) return `rgba(32,201,151,${0.25 + t * 0.7})`;
+  return `rgba(240,83,99,${0.25 - t * 0.7})`;
+}
+function renderIntel() {
+  const fundBox = document.getElementById("fundList");
+  if (!fundBox) return;
+  const rows = state.list.map(id => ({ id, d: ensure(id), chg: chgOf(ensure(id)), rs: rsOf(id) }));
+  const funds = rows.slice().sort((a,b) => (Number(b.d.funding)||-999) - (Number(a.d.funding)||-999));
+  fundBox.innerHTML = funds.map(x =>
+    `<div><b>${baseOf(x.id)}</b> <span class="${Number(x.d.funding)>=0?'up':'down'}">${fmtFund(x.d.funding)}</span></div>`
+  ).join("") || "暂无";
+  const nexts = rows.map(x => x.d.nextFund).filter(Boolean);
+  document.getElementById("fundEta").textContent = nexts.length ? fundEtaShort(Math.min(...nexts)) : "--";
+
+  const heat = document.getElementById("heatMap");
+  heat.innerHTML = rows.map(x =>
+    `<i style="background:${heatColor(x.chg)}">${baseOf(x.id)}<br>${isFinite(x.chg)?fmtChg(x.chg):"--"}</i>`
+  ).join("") || "--";
+
+  const liq = document.getElementById("liqList");
+  liq.innerHTML = rows.map(x => {
+    const L = x.d.liqLong || 0, S = x.d.liqShort || 0, t = L + S;
+    const lp = t ? Math.round(L / t * 100) : 50;
+    return `<div><b>${baseOf(x.id)}</b> 多爆 ${fmtUsd(L)} 空爆 ${fmtUsd(S)}
+      <div class="flow-bar" style="margin:3px 0 6px"><div class="buy" style="width:${lp}%"></div><div class="sell" style="width:${100-lp}%"></div></div></div>`;
+  }).join("") || "--";
+
+  const rs = document.getElementById("rsList");
+  const ranked = rows.slice().sort((a,b) => (isFinite(b.rs)?b.rs:-999) - (isFinite(a.rs)?a.rs:-999));
+  rs.innerHTML = ranked.map(x =>
+    `<div><b>${baseOf(x.id)}</b> <span class="${rsClass(x.id)}">${fmtRs(x.id)}</span>　多空 ${x.d.lsRatio != null ? Number(x.d.lsRatio).toFixed(2) : "--"}</div>`
+  ).join("") || "--";
+}
+async function loadIntel() {
+  const ids = state.list.slice();
+  for (const id of ids) {
+    try {
+      const [oi, hist, ls, liq, fr] = await Promise.all([
+        fetch(REST + "/public/open-interest?instId=" + id).then(r=>r.json()).catch(()=>null),
+        fetch(REST + "/rubik/stat/contracts/open-interest-history?instId=" + id + "&period=1H&limit=3").then(r=>r.json()).catch(()=>null),
+        fetch(REST + "/rubik/stat/contracts/long-short-account-ratio-contract?instId=" + id + "&period=5m&limit=1").then(r=>r.json()).catch(()=>null),
+        fetch(REST + "/rubik/stat/contracts/liquidation-history?instId=" + id + "&period=1H&limit=2").then(r=>r.json()).catch(()=>null),
+        fetch(REST + "/public/funding-rate?instId=" + id).then(r=>r.json()).catch(()=>null)
+      ]);
+      const d = ensure(id);
+      if (oi && oi.data && oi.data[0]) d.oi = Number(oi.data[0].oiUsd);
+      if (hist && hist.data && hist.data.length) {
+        const rows = hist.data.slice().reverse();
+        const last = rows[rows.length - 1];
+        const prev = rows[rows.length - 2] || last;
+        if (last) d.oi = Number(last[3] || last[1]) || d.oi;
+        if (prev) d.oiPrev = Number(prev[3] || prev[1]) || d.oiPrev;
+      }
+      if (ls && ls.data && ls.data[0]) d.lsRatio = Number(ls.data[0][1] || ls.data[0].longShortRatio);
+      if (liq && liq.data && liq.data[0]) {
+        const row = liq.data[0];
+        d.liqLong = Number(row[1] || row.longVolUsd || 0);
+        d.liqShort = Number(row[2] || row.shortVolUsd || 0);
+        if (Array.isArray(row) && row.length >= 4) {
+          d.liqLong = Number(row[1]) || 0;
+          d.liqShort = Number(row[2]) || 0;
+        }
+      }
+      if (fr && fr.data && fr.data[0]) {
+        d.funding = Number(fr.data[0].fundingRate);
+        d.nextFund = Number(fr.data[0].nextFundingTime);
+      }
+    } catch {}
+    await new Promise(r => setTimeout(r, 220));
+  }
+  renderIntel();
+}
+function mountTvExtras() {
+  const ta = document.getElementById("tvTa");
+  const cal = document.getElementById("tvCal");
+  if (!ta || ta.dataset.ready) return;
+  ta.dataset.ready = "1";
+  const s1 = document.createElement("script");
+  s1.src = "https://s3.tradingview.com/external-embedding/embed-widget-technical-analysis.js";
+  s1.async = true;
+  s1.innerHTML = JSON.stringify({
+    interval: "1h", width: "100%", height: 320, isTransparent: true,
+    symbol: tvSymbol(state.tvId || "BTC-USDT-SWAP"),
+    showIntervalTabs: true, locale: "zh_CN", colorTheme: "dark"
+  });
+  ta.appendChild(s1);
+  const s2 = document.createElement("script");
+  s2.src = "https://s3.tradingview.com/external-embedding/embed-widget-events.js";
+  s2.async = true;
+  s2.innerHTML = JSON.stringify({
+    width: "100%", height: 320, colorTheme: "dark", isTransparent: true,
+    locale: "zh_CN", importanceFilter: "0,1", countryFilter: "us,eu,cn"
+  });
+  cal.appendChild(s2);
+}
+function setTvOpen(open) {
+  const dock = document.getElementById("tvDock");
+  const btn = document.getElementById("tvToggle");
+  if (!dock) return;
+  dock.classList.toggle("collapsed", !open);
+  if (btn) btn.textContent = open ? "收起图表" : "展开图表";
+  if (open) {
+    mountTape();
+    mountTV(state.tvId);
+    mountTvExtras();
+  }
+}
+
 function mountTV(id) {
   state.tvId = id || state.tvId || state.list[0] || "BTC-USDT-SWAP";
   const lab = document.getElementById("tvLabel");
@@ -1229,7 +1453,8 @@ function addSymbol(raw) {
       state.pub.send(JSON.stringify({ op:"subscribe", args:[
         {channel:"tickers", instId:id},
         {channel:"funding-rate", instId:id},
-        {channel:"trades", instId:id}
+        {channel:"trades", instId:id},
+        {channel:"books5", instId:id}
       ]}));
     }
     if (state.biz?.readyState === 1) {
@@ -1293,6 +1518,10 @@ document.getElementById("clearTrackBtn").onclick = () => {
   saveTrack();
   renderTrack();
 };
+document.getElementById("tvToggle").onclick = () => {
+  const dock = document.getElementById("tvDock");
+  setTvOpen(dock.classList.contains("collapsed"));
+};
 document.getElementById("copyLinkBtn").onclick = async () => {
   writeHash();
   const url = location.href;
@@ -1328,7 +1557,11 @@ document.getElementById("grid").addEventListener("click", e => {
   }
   const card = e.target.closest(".card");
   if (card && card.dataset.id) {
-    mountTV(card.dataset.id);
+    state.tvId = card.dataset.id;
+    const dock = document.getElementById("tvDock");
+    if (dock && !dock.classList.contains("collapsed")) mountTV(state.tvId);
+    const lab = document.getElementById("tvLabel");
+    if (lab) lab.textContent = tvSymbol(state.tvId);
     render();
   }
 });
@@ -1354,12 +1587,9 @@ setInterval(renderTrack, 60000);
 render();
 connect();
 bootstrapRest();
-mountTape();
-function bootTV() {
-  if (typeof TradingView !== "undefined") mountTV(state.tvId);
-  else setTimeout(bootTV, 400);
-}
-bootTV();
+loadIntel();
+setInterval(loadIntel, 180000);
+setTvOpen(false);
 </script>
 </body>
 </html>
