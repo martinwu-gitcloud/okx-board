@@ -160,7 +160,8 @@
     .ai-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
     .ai-title { font-size: 12px; color: var(--muted); }
     .ai-bias { font-size: 16px; font-weight: 800; }
-    .ai-range, .ai-strats { display: none; }
+    .ai-range { margin-top: 6px; font-size: 12px; color: var(--muted); }
+    .ai-strats { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 5px; }
     .tag {
       font-size: 11px; padding: 2px 7px; border-radius: 999px;
       border: 1px solid #334056; color: var(--muted);
@@ -342,7 +343,7 @@
       <div class="heat" id="heatMap">加载中</div>
     </div>
     <div class="obox">
-      <div class="olabel">爆仓热力 · 近笔强平（多=多头被爆）</div>
+      <div class="olabel">爆仓热力 · 近100笔强平（面值×价，多=多头被爆）</div>
       <div class="liq-list" id="liqList">加载中</div>
     </div>
     <div class="obox">
@@ -617,8 +618,8 @@ function ensure(instId) {
   if (!state.data[instId]) {
     state.data[instId] = {
       last:null, open24h:null, open8:null, high24h:null, low24h:null, vol24h:null,
-      funding:null, nextFund:null, oi:null, oiPrev:null, lsRatio:null,
-      liqLong:0, liqShort:0, books:null,
+      funding:null, nextFund:null, oi:null, oiPrev:null, lsRatio:null, ctVal:1,
+      liqLong:0, liqShort:0, liqN:0, books:null,
       candles:[], flash:null,
       trades:[], buyWin:0, sellWin:0, events:[], h1:[], d1:[]
     };
@@ -1378,14 +1379,15 @@ function renderIntel() {
   liq.innerHTML = rows.map(x => {
     const L = x.d.liqLong || 0, S = x.d.liqShort || 0, t = L + S;
     const lp = t ? Math.round(L / t * 100) : 50;
-    return `<div><b>${baseOf(x.id)}</b> 多爆 ${fmtUsd(L)} 空爆 ${fmtUsd(S)}
-      <div class="flow-bar" style="margin:3px 0 6px"><div class="buy" style="width:${lp}%"></div><div class="sell" style="width:${100-lp}%"></div></div></div>`;
+    const empty = !(L + S);
+    return `<div><b>${baseOf(x.id)}</b> ${empty ? "近笔无强平" : "多爆 "+fmtUsd(L)+" 空爆 "+fmtUsd(S)}
+      <div class="flow-bar" style="margin:3px 0 6px"><div class="buy" style="width:${empty?50:lp}%"></div><div class="sell" style="width:${empty?50:100-lp}%"></div></div></div>`;
   }).join("") || "--";
 
   const rs = document.getElementById("rsList");
   const ranked = rows.slice().sort((a,b) => (isFinite(b.rs)?b.rs:-999) - (isFinite(a.rs)?a.rs:-999));
   rs.innerHTML = ranked.map(x =>
-    `<div><b>${baseOf(x.id)}</b> <span class="${rsClass(x.id)}">${fmtRs(x.id)}</span>　多空 ${x.d.lsRatio != null ? Number(x.d.lsRatio).toFixed(2) : "--"}</div>`
+    `<div><b>${baseOf(x.id)}</b> <span class="${rsClass(x.id)}">${fmtRs(x.id)}</span>　人数比 ${x.d.lsRatio != null ? Number(x.d.lsRatio).toFixed(3)+" (多/空)" : "--"}</div>`
   ).join("") || "--";
 }
 async function fetchJson(url) {
@@ -1396,10 +1398,17 @@ async function fetchJson(url) {
   } catch { return null; }
 }
 async function fetchRubik(path) {
-  const direct = await fetchJson(REST + path);
-  if (direct && direct.code === "0" && direct.data) return direct;
-  const wrapped = "https://api.allorigins.win/raw?url=" + encodeURIComponent("https://www.okx.com/api/v5" + path);
-  return await fetchJson(wrapped);
+  const full = "https://www.okx.com/api/v5" + path;
+  const tries = [
+    REST + path,
+    "https://api.allorigins.win/raw?url=" + encodeURIComponent(full),
+    "https://corsproxy.io/?url=" + encodeURIComponent(full)
+  ];
+  for (const u of tries) {
+    const j = await fetchJson(u);
+    if (j && j.code === "0" && j.data && j.data.length) return j;
+  }
+  return null;
 }
 function ulyOf(id) {
   return id.replace(/-SWAP$/, "");
@@ -1407,18 +1416,18 @@ function ulyOf(id) {
 function applyLiq(id, j) {
   const d = ensure(id);
   const details = ((j && j.data && j.data[0] && j.data[0].details) || []);
-  const cut = Date.now() - 3600000;
-  let L = 0, S = 0;
+  const face = Number(d.ctVal) || 1;
+  let L = 0, S = 0, n = 0;
   details.forEach(x => {
-    const ts = Number(x.ts || x.time);
-    if (ts && ts < cut) return;
-    const usd = Number(x.bkPx) * Number(x.sz);
-    if (!isFinite(usd)) return;
-    if (x.posSide === "long") L += usd;
-    else if (x.posSide === "short") S += usd;
+    const usd = Number(x.bkPx) * Number(x.sz) * face;
+    if (!isFinite(usd) || usd <= 0) return;
+    n += 1;
+    if (x.posSide === "long" || (!x.posSide && x.side === "sell")) L += usd;
+    else S += usd;
   });
   d.liqLong = L;
   d.liqShort = S;
+  d.liqN = n;
 }
 function applyLs(id, j) {
   const row = j && j.data && j.data[0];
@@ -1443,19 +1452,22 @@ async function loadIntel() {
   for (const id of ids) {
     try {
       const uly = ulyOf(id);
-      const [oi, fr, liq] = await Promise.all([
+      const [oi, fr, liq, inst] = await Promise.all([
         fetchJson(REST + "/public/open-interest?instId=" + id),
         fetchJson(REST + "/public/funding-rate?instId=" + id),
-        fetchJson(REST + "/public/liquidation-orders?instType=SWAP&uly=" + uly + "&state=filled&limit=100")
+        fetchJson(REST + "/public/liquidation-orders?instType=SWAP&uly=" + uly + "&state=filled&limit=100"),
+        fetchJson(REST + "/public/instruments?instType=SWAP&instId=" + id)
       ]);
       const d = ensure(id);
+      if (inst && inst.data && inst.data[0]) d.ctVal = Number(inst.data[0].ctVal) || 1;
       if (oi && oi.data && oi.data[0]) snapOi(id, Number(oi.data[0].oiUsd));
       if (fr && fr.data && fr.data[0]) {
         d.funding = Number(fr.data[0].fundingRate);
         d.nextFund = Number(fr.data[0].nextFundingTime);
       }
       applyLiq(id, liq);
-      const ls = await fetchRubik("/rubik/stat/contracts/long-short-account-ratio-contract?instId=" + id + "&period=5m&limit=1");
+      let ls = await fetchRubik("/rubik/stat/contracts/long-short-account-ratio-contract?instId=" + id + "&period=5m&limit=1");
+      if (!ls) ls = await fetchRubik("/rubik/stat/contracts/long-short-account-ratio?ccy=" + baseOf(id) + "&period=5m");
       applyLs(id, ls);
       const hist = await fetchRubik("/rubik/stat/contracts/open-interest-history?instId=" + id + "&period=1H&limit=3");
       if (hist && hist.data && hist.data.length >= 2) {
