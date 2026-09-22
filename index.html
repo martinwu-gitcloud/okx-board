@@ -1071,18 +1071,26 @@ function fmtDecisionTs(ts) {
   if (!ts) return "--";
   return new Date(ts).toLocaleString("zh-CN", { hour12: false, month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" });
 }
+const LEVERAGE = 50;
+function liqPx(side, entry) {
+  if (!entry) return NaN;
+  return side === "long" ? entry * (1 - 1 / LEVERAGE) : entry * (1 + 1 / LEVERAGE);
+}
 function posHtml(id, last, sideTxt, side) {
   const pos = openPos(id);
   if (!pos) {
-    return `本决策：<b class="${side==='long'?'up':side==='short'?'down':''}">${sideTxt}</b>　开仓均价 --　时间 --`;
+    return `本决策：<b class="${side==='long'?'up':side==='short'?'down':''}">${sideTxt}</b>　按 ${LEVERAGE}x 计价　开仓均价 --　时间 --`;
   }
   const dir = pos.side === "long" ? "开多" : "开空";
   const cls = pos.side === "long" ? "up" : "down";
-  const pnl = last && pos.avg
+  const pxChg = last && pos.avg
     ? (pos.side === "long" ? (last - pos.avg) / pos.avg : (pos.avg - last) / pos.avg) * 100
     : NaN;
-  const pnlTxt = isFinite(pnl) ? `<span class="${pnl>=0?'up':'down'}">${fmtChg(pnl)}</span>` : "";
-  return `本决策：<b class="${cls}">${dir}</b>　时间 ${fmtDecisionTs(pos.ts)}　开仓价 ${fmtPx(pos.entry)}　均价 ${fmtPx(pos.avg)}${pos.n>1?" ·"+pos.n+"笔":""}　浮盈 ${pnlTxt}`;
+  const levPnl = isFinite(pxChg) ? pxChg * LEVERAGE : NaN;
+  const liq = liqPx(pos.side, pos.avg);
+  const pxTxt = isFinite(pxChg) ? `<span class="${pxChg>=0?'up':'down'}">${fmtChg(pxChg)}</span>` : "--";
+  const levTxt = isFinite(levPnl) ? `<span class="${levPnl>=0?'up':'down'}">${fmtChg(levPnl)}</span>` : "--";
+  return `本决策：<b class="${cls}">${dir} ${LEVERAGE}x</b>　时间 ${fmtDecisionTs(pos.ts)}　开仓价 ${fmtPx(pos.entry)}　均价 ${fmtPx(pos.avg)}${pos.n>1?" ·"+pos.n+"笔":""}　价变 ${pxTxt}　保证金盈亏 ${levTxt}　参考强平 ${fmtPx(liq)}`;
 }
 function trackStats(id) {
   const rows = state.track.filter(x => !id || x.id === id);
