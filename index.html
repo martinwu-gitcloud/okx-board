@@ -38,10 +38,10 @@
     }
     .brand { display: flex; align-items: center; gap: 10px; min-width: 220px; }
     .logo {
-      width: 34px; height: 34px; border-radius: 9px;
-      background: linear-gradient(135deg, #1a66ff, #6aa3ff);
-      display: grid; place-items: center; font-weight: 800; letter-spacing: .5px;
+      width: 40px; height: 40px; border-radius: 12px;
+      background: #1236c4; overflow: hidden; flex-shrink: 0;
     }
+    .logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .brand h1 { margin: 0; font-size: 16px; font-weight: 700; }
     .brand p { margin: 2px 0 0; font-size: 12px; color: var(--muted); }
     .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; flex: 1; }
@@ -235,7 +235,7 @@
 <body>
   <header>
     <div class="brand">
-      <div class="logo">OX</div>
+      <div class="logo"><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSMrsLyTdKs3pOW7r0ARdiDxp8E59moIysRs6GFIEn6pg&s=10" alt="logo" referrerpolicy="no-referrer"/></div>
       <div>
         <h1>OKX 永续合约看板</h1>
         <p>默认 BTC / ETH，其余自己添加</p>
@@ -335,7 +335,7 @@
       <div class="heat" id="heatMap">加载中</div>
     </div>
     <div class="obox">
-      <div class="olabel">爆仓热力 · 近1小时多空爆仓</div>
+      <div class="olabel">爆仓热力 · 近笔强平（多=多头被爆）</div>
       <div class="liq-list" id="liqList">加载中</div>
     </div>
     <div class="obox">
@@ -557,6 +557,43 @@ function fundEtaShort(ts) {
   const m = Math.floor(ms / 60000);
   return Math.floor(m / 60) + "h" + String(m % 60).padStart(2, "0") + "m";
 }
+function ulyOf(id) {
+  return id.replace(/-SWAP$/, "");
+}
+function applyLiqMsg(item) {
+  const id = item.instId;
+  if (!id || (state.list.length && !state.list.includes(id))) return;
+  const d = ensure(id);
+  if (!d.liqEvents) d.liqEvents = [];
+  const ctVal = Number(d.ctVal) || 1;
+  (item.details || []).forEach(x => {
+    const px = Number(x.bkPx) || Number(d.last) || 0;
+    const usd = Number(x.sz) * ctVal * px;
+    if (!usd) return;
+    const longHit = x.posSide === "long" || (!x.posSide && x.side === "sell");
+    d.liqEvents.push({ ts: Number(x.ts || x.time), long: longHit ? usd : 0, short: longHit ? 0 : usd });
+  });
+  sumLiq(id);
+}
+function sumLiq(id) {
+  const d = ensure(id);
+  const cut = Date.now() - 3600000;
+  d.liqEvents = (d.liqEvents || []).filter(e => e.ts >= cut).slice(-400);
+  d.liqLong = d.liqEvents.reduce((s,e)=>s+e.long,0);
+  d.liqShort = d.liqEvents.reduce((s,e)=>s+e.short,0);
+}
+async function loadLiq(id) {
+  const d = ensure(id);
+  try {
+    const inst = await fetch(REST + "/public/instruments?instType=SWAP&instId=" + id).then(r=>r.json());
+    if (inst.data && inst.data[0]) d.ctVal = Number(inst.data[0].ctVal) || 1;
+  } catch {}
+  try {
+    const j = await fetch(REST + "/public/liquidation-orders?instType=SWAP&uly=" + encodeURIComponent(ulyOf(id)) + "&state=filled").then(r=>r.json());
+    (j.data || []).forEach(applyLiqMsg);
+  } catch {}
+}
+
 function bookHtml(d) {
   const bids = (d.books && d.books.bids || []).slice(0, 3);
   const asks = (d.books && d.books.asks || []).slice(0, 3);
@@ -1187,6 +1224,8 @@ function handleMsg(raw) {
     const id = msg.arg.instId;
     const row = msg.data && msg.data[0];
     if (row) ensure(id).books = { bids: row.bids || [], asks: row.asks || [] };
+  } else if (ch === "liquidation-orders") {
+    msg.data.forEach(applyLiqMsg);
   } else if (ch === "trades") {
     msg.data.forEach(applyTrade);
   } else if (ch === "candle1H") {
@@ -1220,6 +1259,7 @@ function subscribePublic() {
     args.push({ channel: "trades", instId: id });
     args.push({ channel: "books5", instId: id });
   });
+  args.push({ channel: "liquidation-orders", instType: "SWAP" });
   chunkSend(state.pub, args);
 }
 
@@ -1338,44 +1378,88 @@ function renderIntel() {
     `<div><b>${baseOf(x.id)}</b> <span class="${rsClass(x.id)}">${fmtRs(x.id)}</span>　多空 ${x.d.lsRatio != null ? Number(x.d.lsRatio).toFixed(2) : "--"}</div>`
   ).join("") || "--";
 }
+async function fetchJson(url) {
+  try {
+    const r = await fetch(url);
+    if (!r.ok) return null;
+    return await r.json();
+  } catch { return null; }
+}
+async function fetchRubik(path) {
+  const direct = await fetchJson(REST + path);
+  if (direct && direct.code === "0" && direct.data) return direct;
+  const wrapped = "https://api.allorigins.win/raw?url=" + encodeURIComponent("https://www.okx.com/api/v5" + path);
+  return await fetchJson(wrapped);
+}
+function ulyOf(id) {
+  return id.replace(/-SWAP$/, "");
+}
+function applyLiq(id, j) {
+  const d = ensure(id);
+  const details = ((j && j.data && j.data[0] && j.data[0].details) || []);
+  const cut = Date.now() - 3600000;
+  let L = 0, S = 0;
+  details.forEach(x => {
+    const ts = Number(x.ts || x.time);
+    if (ts && ts < cut) return;
+    const usd = Number(x.bkPx) * Number(x.sz);
+    if (!isFinite(usd)) return;
+    if (x.posSide === "long") L += usd;
+    else if (x.posSide === "short") S += usd;
+  });
+  d.liqLong = L;
+  d.liqShort = S;
+}
+function applyLs(id, j) {
+  const row = j && j.data && j.data[0];
+  if (!row) return;
+  const v = Array.isArray(row) ? Number(row[1]) : Number(row.longShortRatio);
+  if (isFinite(v)) ensure(id).lsRatio = v;
+}
+function snapOi(id, usd) {
+  const d = ensure(id);
+  if (!isFinite(usd)) return;
+  const key = "okx_oi_snap_v1";
+  let bag = {};
+  try { bag = JSON.parse(localStorage.getItem(key) || "{}"); } catch { bag = {}; }
+  const prev = bag[id];
+  if (prev && prev.ts && Date.now() - prev.ts >= 15 * 60000) d.oiPrev = prev.usd;
+  d.oi = usd;
+  bag[id] = { usd, ts: Date.now() };
+  try { localStorage.setItem(key, JSON.stringify(bag)); } catch {}
+}
 async function loadIntel() {
   const ids = state.list.slice();
   for (const id of ids) {
     try {
-      const [oi, hist, ls, liq, fr] = await Promise.all([
-        fetch(REST + "/public/open-interest?instId=" + id).then(r=>r.json()).catch(()=>null),
-        fetch(REST + "/rubik/stat/contracts/open-interest-history?instId=" + id + "&period=1H&limit=3").then(r=>r.json()).catch(()=>null),
-        fetch(REST + "/rubik/stat/contracts/long-short-account-ratio-contract?instId=" + id + "&period=5m&limit=1").then(r=>r.json()).catch(()=>null),
-        fetch(REST + "/rubik/stat/contracts/liquidation-history?instId=" + id + "&period=1H&limit=2").then(r=>r.json()).catch(()=>null),
-        fetch(REST + "/public/funding-rate?instId=" + id).then(r=>r.json()).catch(()=>null)
+      const uly = ulyOf(id);
+      const [oi, fr, liq] = await Promise.all([
+        fetchJson(REST + "/public/open-interest?instId=" + id),
+        fetchJson(REST + "/public/funding-rate?instId=" + id),
+        fetchJson(REST + "/public/liquidation-orders?instType=SWAP&uly=" + uly + "&state=filled&limit=100")
       ]);
       const d = ensure(id);
-      if (oi && oi.data && oi.data[0]) d.oi = Number(oi.data[0].oiUsd);
-      if (hist && hist.data && hist.data.length) {
-        const rows = hist.data.slice().reverse();
-        const last = rows[rows.length - 1];
-        const prev = rows[rows.length - 2] || last;
-        if (last) d.oi = Number(last[3] || last[1]) || d.oi;
-        if (prev) d.oiPrev = Number(prev[3] || prev[1]) || d.oiPrev;
-      }
-      if (ls && ls.data && ls.data[0]) d.lsRatio = Number(ls.data[0][1] || ls.data[0].longShortRatio);
-      if (liq && liq.data && liq.data[0]) {
-        const row = liq.data[0];
-        d.liqLong = Number(row[1] || row.longVolUsd || 0);
-        d.liqShort = Number(row[2] || row.shortVolUsd || 0);
-        if (Array.isArray(row) && row.length >= 4) {
-          d.liqLong = Number(row[1]) || 0;
-          d.liqShort = Number(row[2]) || 0;
-        }
-      }
+      if (oi && oi.data && oi.data[0]) snapOi(id, Number(oi.data[0].oiUsd));
       if (fr && fr.data && fr.data[0]) {
         d.funding = Number(fr.data[0].fundingRate);
         d.nextFund = Number(fr.data[0].nextFundingTime);
       }
+      applyLiq(id, liq);
+      const ls = await fetchRubik("/rubik/stat/contracts/long-short-account-ratio-contract?instId=" + id + "&period=5m&limit=1");
+      applyLs(id, ls);
+      const hist = await fetchRubik("/rubik/stat/contracts/open-interest-history?instId=" + id + "&period=1H&limit=3");
+      if (hist && hist.data && hist.data.length >= 2) {
+        const rows = hist.data.slice().sort((a,b)=>Number(a[0])-Number(b[0]));
+        const prev = rows[rows.length - 2];
+        const last = rows[rows.length - 1];
+        if (last) d.oi = Number(last[3]) || d.oi;
+        if (prev) d.oiPrev = Number(prev[3]) || d.oiPrev;
+      }
     } catch {}
-    await new Promise(r => setTimeout(r, 220));
+    renderIntel();
+    await new Promise(r => setTimeout(r, 250));
   }
-  renderIntel();
+  render();
 }
 function mountTvExtras() {
   const ta = document.getElementById("tvTa");
