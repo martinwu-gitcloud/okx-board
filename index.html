@@ -277,8 +277,8 @@
       </select>
       <button class="ghost" id="resetBtn">只留 BTC/ETH</button>
       <button class="ghost" id="copyLinkBtn">复制同步链接</button>
-      <input id="marginInput" type="number" min="1" step="10" value="100" title="本次保证金" style="width:88px" />
-      <span style="font-size:12px;color:var(--muted)">保证金 U</span>
+      <input id="marginInput" type="number" min="1" step="10" value="100" title="每笔自动开仓保证金" style="width:88px" />
+      <span style="font-size:12px;color:var(--muted)">自动保证金 U</span>
     </div>
     <div class="status">
       <span><i id="pubDot" class="dot off"></i>行情</span>
@@ -326,7 +326,7 @@
   </section>
   <section class="track" id="trackPanel">
     <div class="track-head">
-      <h3>模拟盘 1000U · 50x · 自行开平仓</h3>
+      <h3>模拟盘 1000U · 50x · 按研判点位自动开平</h3>
       <button class="ghost" id="clearTrackBtn" type="button">清空战绩</button>
     </div>
     <div class="track-grid">
@@ -859,12 +859,6 @@ function cardHtml(id) {
         <div class="event-avg">${eventAvgHtml(d.events)}</div>
       </div>
       <div class="ai">${predictHtml(id)}</div>
-      <div class="trade-bar">
-        <button type="button" class="long" data-open="long" data-id="${id}">开多</button>
-        <button type="button" class="short" data-open="short" data-id="${id}">开空</button>
-        <button type="button" data-addm="${id}">加保证金</button>
-        <button type="button" data-close="${id}">平仓</button>
-      </div>
     </article>`;
 }
 
@@ -1036,6 +1030,7 @@ function predict(id) {
   d.biasSide = side;
   levelsOf(id);
   recordDecision(id, side, last, lean, conf);
+  autoPaper(id);
   const local = trackStats(id);
   const tags = votes.map(v => `<span class="tag ${v.s>0.15?'up':v.s<-0.15?'down':''}">${v.name} ${v.s>0.15?'多':v.s<-0.15?'空':'中'} · ${v.note}</span>`).join("");
   return { lean, side, conf, html: `<div class="ai-top"><div class="ai-title">24-48小时综合研判 · ${agree}/${votes.length}策略同向 · 方向分 ${lean}</div><div class="ai-bias ${cls}">${bias} ${conf}%</div></div>
@@ -1121,31 +1116,62 @@ function paperEquity() {
 }
 function readMargin() {
   const n = Number(document.getElementById("marginInput") && document.getElementById("marginInput").value);
-  return isFinite(n) && n > 0 ? n : 100;
+  if (isFinite(n) && n > 0) return n;
+  return 100;
 }
-function openPaper(id, side) {
-  const px = state.data[id] && state.data[id].last;
-  if (!px) return alert("还没有价格");
-  if (state.paper.positions[id]) return alert("该币已有仓，请先平仓");
-  const mgn = Math.min(readMargin(), paperAvail(), BANK0);
-  if (mgn < 1) return alert("可用保证金不足");
-  if (mgn > paperAvail()) return;
+function autoSize() {
+  return Math.min(readMargin(), paperAvail(), BANK0);
+}
+function recentlyClosed(id) {
+  const c = state.paper.closes.find(x => x.id === id);
+  return c && Date.now() - c.ts < COOLDOWN;
+}
+function openPaper(id, side, px) {
+  if (!px || state.paper.positions[id]) return false;
+  const mgn = autoSize();
+  if (mgn < 1) return false;
   state.paper.bank -= mgn;
-  state.paper.positions[id] = { id, side, entry: px, margin: mgn, ts: Date.now(), lev: LEVERAGE };
+  state.paper.positions[id] = { id, side, entry: px, margin: mgn, ts: Date.now(), lev: LEVERAGE, auto: true };
   savePaper();
   renderPaper();
-  render();
+  return true;
 }
 function addPaperMargin(id) {
   const p = state.paper.positions[id];
-  if (!p) return alert("没有持仓");
-  const extra = Math.min(readMargin(), paperAvail());
-  if (extra < 1) return alert("可用不足或超出本金");
+  if (!p) return;
+  const extra = Math.min(autoSize() * 0.5, paperAvail());
+  if (extra < 1) return;
+  if (p.margin + extra > BANK0) return;
   state.paper.bank -= extra;
   p.margin += extra;
+  p.added = (p.added || 0) + extra;
   savePaper();
   renderPaper();
-  render();
+}
+function autoPaper(id) {
+  const d = ensure(id);
+  const px = d.last;
+  if (!px) return;
+  checkLiq(id);
+  const p = state.paper.positions[id];
+  const lv = d.levels || levelsOf(id);
+  const side = d.biasSide;
+  if (p) {
+    const age = Date.now() - p.ts;
+    const flip = (p.side === "long" && side === "short") || (p.side === "short" && side === "long");
+    const tp = lv && (p.side === "long" ? px >= lv.shortOpen : px <= lv.longOpen);
+    const addHit = lv && !p.added && (p.side === "long" ? px <= lv.longAdd : px >= lv.shortAdd);
+    if (addHit) addPaperMargin(id);
+    if (flip) closePaper(id, "flip");
+    else if (tp) closePaper(id, "tp");
+    else if (age >= H24) closePaper(id, "time");
+    return;
+  }
+  if (side !== "long" && side !== "short") return;
+  if (recentlyClosed(id)) return;
+  if (!lv) return;
+  if (side === "long" && px <= lv.longOpen * 1.002) openPaper(id, "long", px);
+  if (side === "short" && px >= lv.shortOpen * 0.998) openPaper(id, "short", px);
 }
 function closePaper(id, reason) {
   const p = state.paper.positions[id];
@@ -1169,7 +1195,6 @@ function closePaper(id, reason) {
   }
   savePaper();
   renderPaper();
-  render();
 }
 function checkLiq(id) {
   const p = state.paper.positions[id];
@@ -1226,7 +1251,7 @@ function paperLine(id) {
   const last = state.data[id] && state.data[id].last;
   if (!p) {
     const c = state.paper.closes.find(x => x.id === id);
-    if (!c) return `模拟仓：空仓　点下方开多/开空`;
+    if (!c) return `模拟仓：空仓　等待价格触及研判点位后自动开仓`;
     return `上次平仓 ${c.reason==="liq"?"强平":"平仓"} ${fmtPx(c.close)}　收益 ${c.pnl.toFixed(2)}U　收益率 ${fmtChg(c.ret)}　${c.win?"赢":"输"}`;
   }
   const upl = paperUpl(p, last);
@@ -1383,6 +1408,7 @@ function applyTicker(t) {
   d.bid = Number(t.bidPx);
   d.ask = Number(t.askPx);
   checkLiq(t.instId);
+  if (d.biasSide) autoPaper(t.instId);
 }
 
 function applyCandle(instId, row) {
@@ -1892,27 +1918,6 @@ document.getElementById("grid").addEventListener("click", e => {
     e.preventDefault();
     e.stopPropagation();
     removeSymbol(del.getAttribute("data-del"));
-    return;
-  }
-  const open = e.target.closest("[data-open]");
-  if (open) {
-    e.preventDefault();
-    e.stopPropagation();
-    openPaper(open.getAttribute("data-id"), open.getAttribute("data-open"));
-    return;
-  }
-  const addm = e.target.closest("[data-addm]");
-  if (addm) {
-    e.preventDefault();
-    e.stopPropagation();
-    addPaperMargin(addm.getAttribute("data-addm"));
-    return;
-  }
-  const cl = e.target.closest("[data-close]");
-  if (cl) {
-    e.preventDefault();
-    e.stopPropagation();
-    closePaper(cl.getAttribute("data-close"), "close");
     return;
   }
   const card = e.target.closest(".card");
