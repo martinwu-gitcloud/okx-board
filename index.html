@@ -102,7 +102,12 @@
     .down { color: var(--down); }
     .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 10px; font-size: 12px; color: var(--muted); }
     .stats b { display: block; color: var(--text); margin-top: 2px; font-size: 12.5px; font-weight: 600; }
-    canvas { display: block; width: 100%; height: 120px; margin: 0; background: transparent; }
+    canvas { display: block; width: 100%; height: 138px; margin: 0; background: transparent; }
+    .levels { margin-top: 8px; padding: 8px; border-radius: 8px; background: #10151f; border: 1px solid var(--line); }
+    .levels .h { font-size: 11px; color: var(--muted); margin-bottom: 6px; }
+    .levels .g { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; font-size: 11px; color: var(--muted); }
+    .levels b { color: var(--text); }
+    .levels .pref { font-weight: 700; }
     .chart-box { margin-top: 8px; background: #10151f; border-radius: 8px; overflow: hidden; }
     .book {
       display: grid; grid-template-columns: 1fr 1fr; gap: 0 10px;
@@ -770,6 +775,8 @@ function patchCard(id) {
   if (al) al.innerHTML = eventsHtml(d.events);
   const avgBox = card.querySelector(".event-avg");
   if (avgBox) avgBox.innerHTML = eventAvgHtml(d.events);
+  const lv = card.querySelector(".levels");
+  if (lv) lv.innerHTML = levelsHtml(id);
   const ai = card.querySelector(".ai");
   if (ai) ai.innerHTML = predictHtml(id);
   card.classList.toggle("active", id === state.tvId);
@@ -815,7 +822,8 @@ function cardHtml(id) {
         <span>多空比 <b>${d.lsRatio != null ? Number(d.lsRatio).toFixed(2) : "--"}</b></span>
         <span>结算 <b>${fundEtaShort(d.nextFund)}</b></span>
       </div>
-      <div class="chart-box"><canvas data-chart="${id}" width="640" height="160"></canvas></div>
+      <div class="chart-box"><canvas data-chart="${id}" width="720" height="200"></canvas></div>
+      <div class="levels">${levelsHtml(id)}</div>
       <div class="book">${bookHtml(d)}</div>
       <div class="flow">
         <div class="flow-bar"><div class="buy" style="width:${flowInfo(d).buyPct}%"></div><div class="sell" style="width:${flowInfo(d).sellPct}%"></div></div>
@@ -927,6 +935,41 @@ function applyD1(instId, row) {
   }
   setOpen8(instId);
 }
+function levelsOf(id) {
+  const d = ensure(id);
+  const bars = (d.h1 && d.h1.length >= 20) ? d.h1 : d.candles;
+  const last = d.last;
+  if (!bars || bars.length < 12 || !last) return null;
+  const closes = bars.map(x => x.c);
+  const a = atr(bars, 14) || last * 0.018;
+  const e12 = ema(closes, 12) || last;
+  const hi20 = Math.max(...bars.slice(-20).map(x => x.h));
+  const lo20 = Math.min(...bars.slice(-20).map(x => x.l));
+  const mid = (hi20 + lo20) / 2;
+  const open8 = d.open8 || d.open24h || last;
+  const longOpen = Math.min(e12, last - a * 0.28, mid);
+  const longAdd = Math.min(lo20, last - a * 0.85, open8);
+  const shortOpen = Math.max(e12, last + a * 0.28, mid);
+  const shortAdd = Math.max(hi20, last + a * 0.85, open8);
+  const stopL = longAdd - a * 0.55;
+  const stopS = shortAdd + a * 0.55;
+  d.levels = { last, longOpen, longAdd, shortOpen, shortAdd, stopL, stopS, hi20, lo20 };
+  return d.levels;
+}
+function levelsHtml(id) {
+  const lv = levelsOf(id);
+  const side = ensure(id).biasSide || "flat";
+  if (!lv) return `<div class="h">推荐点位</div><div class="g">K线不足，稍后计算</div>`;
+  const pref = side === "long" ? "优先做多回踩" : side === "short" ? "优先做空反抽" : "双向都等，不追价";
+  const cls = side === "long" ? "up" : side === "short" ? "down" : "";
+  return `<div class="h">点位建议 · EMA回踩 / 通道极值 / ATR加减仓　<span class="pref ${cls}">${pref}</span></div>
+    <div class="g">
+      <div class="up">开多 ${fmtPx(lv.longOpen)}<b>加仓 ${fmtPx(lv.longAdd)}</b></div>
+      <div class="down">开空 ${fmtPx(lv.shortOpen)}<b>加仓 ${fmtPx(lv.shortAdd)}</b></div>
+      <div>多止损参考 <b>${fmtPx(lv.stopL)}</b></div>
+      <div>空止损参考 <b>${fmtPx(lv.stopS)}</b></div>
+    </div>`;
+}
 function predict(id) {
   const d = ensure(id);
   const bars = d.h1.length >= 26 ? d.h1 : d.candles;
@@ -963,6 +1006,8 @@ function predict(id) {
   const lean = Math.round(50 + score * 50);
   const side = lean >= 60 ? "long" : lean <= 40 ? "short" : "flat";
   const sideTxt = side === "long" ? "开多" : side === "short" ? "开空" : "观望";
+  d.biasSide = side;
+  levelsOf(id);
   recordDecision(id, side, last, lean, conf);
   const local = trackStats(id);
   const tags = votes.map(v => `<span class="tag ${v.s>0.15?'up':v.s<-0.15?'down':''}">${v.name} ${v.s>0.15?'多':v.s<-0.15?'空':'中'} · ${v.note}</span>`).join("");
@@ -1018,13 +1063,18 @@ function openPos(id) {
   const side = rows[rows.length - 1].side;
   const same = rows.filter(x => x.side === side);
   const avg = same.reduce((s,x)=>s+x.entry,0) / same.length;
-  const entry = same[same.length - 1].entry;
-  return { side, avg, entry, n: same.length, pending: pending.length > 0 };
+  const latest = same[same.length - 1];
+  const entry = latest.entry;
+  return { side, avg, entry, n: same.length, pending: pending.length > 0, ts: latest.ts };
+}
+function fmtDecisionTs(ts) {
+  if (!ts) return "--";
+  return new Date(ts).toLocaleString("zh-CN", { hour12: false, month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" });
 }
 function posHtml(id, last, sideTxt, side) {
   const pos = openPos(id);
   if (!pos) {
-    return `本决策：<b class="${side==='long'?'up':side==='short'?'down':''}">${sideTxt}</b>　开仓均价 --`;
+    return `本决策：<b class="${side==='long'?'up':side==='short'?'down':''}">${sideTxt}</b>　开仓均价 --　时间 --`;
   }
   const dir = pos.side === "long" ? "开多" : "开空";
   const cls = pos.side === "long" ? "up" : "down";
@@ -1032,7 +1082,7 @@ function posHtml(id, last, sideTxt, side) {
     ? (pos.side === "long" ? (last - pos.avg) / pos.avg : (pos.avg - last) / pos.avg) * 100
     : NaN;
   const pnlTxt = isFinite(pnl) ? `<span class="${pnl>=0?'up':'down'}">${fmtChg(pnl)}</span>` : "";
-  return `本决策：<b class="${cls}">${dir}</b>　开仓价 ${fmtPx(pos.entry)}　均价 ${fmtPx(pos.avg)}${pos.n>1?" ·"+pos.n+"笔":""}　浮盈 ${pnlTxt}`;
+  return `本决策：<b class="${cls}">${dir}</b>　时间 ${fmtDecisionTs(pos.ts)}　开仓价 ${fmtPx(pos.entry)}　均价 ${fmtPx(pos.avg)}${pos.n>1?" ·"+pos.n+"笔":""}　浮盈 ${pnlTxt}`;
 }
 function trackStats(id) {
   const rows = state.track.filter(x => !id || x.id === id);
@@ -1112,19 +1162,26 @@ function drawChart(id) {
   const lows = candles.map(c => c.l);
   const min = Math.min(...lows);
   const max = Math.max(...highs);
-  const pad = (max - min) * 0.08 || 1;
-  const yMin = min - pad, yMax = max + pad;
-  const y = v => h - ((v - yMin) / (yMax - yMin)) * (h - 28) - 14;
-  const slot = w / candles.length;
+  const lv = state.data[id]?.levels;
+  const last = state.data[id]?.last;
+  const extra = [last, lv && lv.longOpen, lv && lv.shortOpen].filter(x => isFinite(x));
+  const min2 = Math.min(min, ...extra);
+  const max2 = Math.max(max, ...extra);
+  const pad = (max2 - min2) * 0.1 || 1;
+  const yMin = min2 - pad, yMax = max2 + pad;
+  const y = v => h - ((v - yMin) / (yMax - yMin)) * (h - 22) - 8;
+  const left = 4, right = 86;
+  const plotW = w - left - right;
+  const slot = plotW / candles.length;
   const bodyW = Math.max(3, slot * 0.62);
 
   ctx.strokeStyle = "#243044";
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(0, h/2); ctx.lineTo(w, h/2); ctx.stroke();
+  ctx.moveTo(left, h/2); ctx.lineTo(w - right, h/2); ctx.stroke();
 
   candles.forEach((c, i) => {
-    const x = i * slot + slot/2;
+    const x = left + i * slot + slot/2;
     const up = c.c >= c.o;
     ctx.strokeStyle = up ? "#20c997" : "#f05363";
     ctx.fillStyle = up ? "#20c997" : "#f05363";
@@ -1135,6 +1192,27 @@ function drawChart(id) {
     const top = y(Math.max(c.o, c.c));
     const bot = y(Math.min(c.o, c.c));
     ctx.fillRect(x - bodyW/2, top, bodyW, Math.max(1, bot - top));
+  });
+
+  const marks = [
+    last != null ? { v: last, c: "#e8edf5", t: fmtPx(last) } : null,
+    { v: max, c: "#8b97ab", t: fmtPx(max) },
+    { v: min, c: "#8b97ab", t: fmtPx(min) },
+    lv ? { v: lv.longOpen, c: "#20c997", t: "多 "+fmtPx(lv.longOpen) } : null,
+    lv ? { v: lv.shortOpen, c: "#f05363", t: "空 "+fmtPx(lv.shortOpen) } : null
+  ].filter(Boolean);
+  ctx.font = "11px sans-serif";
+  marks.forEach(m => {
+    const yy = y(m.v);
+    ctx.strokeStyle = m.c;
+    ctx.globalAlpha = 0.35;
+    ctx.beginPath();
+    ctx.moveTo(left, yy);
+    ctx.lineTo(w - right, yy);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = m.c;
+    ctx.fillText(m.t, w - right + 4, yy + 4);
   });
 }
 
