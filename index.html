@@ -195,6 +195,10 @@
     .tbox .k { font-size:11px; color:var(--muted); }
     .tbox .v { font-size:18px; font-weight:800; margin-top:3px; }
     .ai-track { margin-top:8px; font-size:12px; color:var(--muted); }
+    .trade-bar { display:flex; gap:6px; margin-top:8px; }
+    .trade-bar button { flex:1; font-size:12px; padding:6px 8px; }
+    .trade-bar .long { background:#1a6b4f; border-color:#1a6b4f; }
+    .trade-bar .short { background:#8a2e38; border-color:#8a2e38; }
     @media (max-width: 900px) { .track-grid { grid-template-columns: 1fr 1fr 1fr; } .track { margin-left:12px; margin-right:12px; } }
     .overview {
       display: grid; gap: 10px; padding: 10px 18px 0;
@@ -273,25 +277,21 @@
       </select>
       <button class="ghost" id="resetBtn">只留 BTC/ETH</button>
       <button class="ghost" id="copyLinkBtn">复制同步链接</button>
-      <button class="ghost" id="tvToggle">展开图表</button>
+      <input id="marginInput" type="number" min="1" step="10" value="100" title="本次保证金" style="width:88px" />
+      <span style="font-size:12px;color:var(--muted)">保证金 U</span>
     </div>
     <div class="status">
       <span><i id="pubDot" class="dot off"></i>行情</span>
       <span><i id="bizDot" class="dot off"></i>K线</span>
     </div>
   </header>
-  <section class="tv-wrap tv-dock collapsed" id="tvDock">
+  <section class="tv-wrap" id="tvDock">
     <div class="tv-head">
-      <span>TradingView · <b id="tvLabel">OKX:BTCUSDT.P</b> · 点击卡片切换</span>
-      <span>默认收起，给四张卡片留屏</span>
+      <span>TradingView 技术分析 / 财经事件 · 点击卡片切换品种 <b id="tvLabel">OKX:BTCUSDT.P</b></span>
     </div>
-    <div class="tv-body">
-      <div class="tv-tape" id="tvTape"></div>
-      <div id="tvChart"></div>
-      <div class="tv-extras">
-        <div id="tvTa"></div>
-        <div id="tvCal"></div>
-      </div>
+    <div class="tv-extras">
+      <div id="tvTa"></div>
+      <div id="tvCal"></div>
     </div>
   </section>
 
@@ -326,16 +326,16 @@
   </section>
   <section class="track" id="trackPanel">
     <div class="track-head">
-      <h3>研判战绩 · 方向分≥60开多 / ≤40开空 · 到期后按价格涨跌结算</h3>
+      <h3>模拟盘 1000U · 50x · 自行开平仓</h3>
       <button class="ghost" id="clearTrackBtn" type="button">清空战绩</button>
     </div>
     <div class="track-grid">
-      <div class="tbox"><div class="k">24小时胜率</div><div class="v" id="wr24">--</div></div>
-      <div class="tbox"><div class="k">48小时胜率</div><div class="v" id="wr48">--</div></div>
-      <div class="tbox"><div class="k">开多胜率</div><div class="v up" id="wrLong">--</div></div>
-      <div class="tbox"><div class="k">开空胜率</div><div class="v down" id="wrShort">--</div></div>
-      <div class="tbox"><div class="k">已结算 / 待结算</div><div class="v" id="wrN">0 / 0</div></div>
-      <div class="tbox"><div class="k">最近开仓</div><div class="v" id="wrLast">--</div></div>
+      <div class="tbox"><div class="k">权益 / 可用</div><div class="v" id="eqVal">1000 / 1000</div></div>
+      <div class="tbox"><div class="k">占用保证金</div><div class="v" id="mgnVal">0</div></div>
+      <div class="tbox"><div class="k">累计盈亏</div><div class="v" id="pnlVal">0</div></div>
+      <div class="tbox"><div class="k">24h胜率王</div><div class="v" id="best24">--</div></div>
+      <div class="tbox"><div class="k">48h胜率王</div><div class="v" id="best48">--</div></div>
+      <div class="tbox"><div class="k">最近平仓</div><div class="v" id="wrLast">--</div></div>
     </div>
   </section>
   <section class="intel" id="intel">
@@ -373,6 +373,8 @@ const WS_BUSINESS = "wss://ws.okx.com:8443/ws/v5/business";
 const REST = "https://www.okx.com/api/v5";
 const STORE_KEY = "okx_swap_watchlist_v2";
 const TRACK_KEY = "okx_pred_track_v1";
+const PAPER_KEY = "okx_paper_v1";
+const BANK0 = 1000;
 const H24 = 24 * 3600 * 1000;
 const H48 = 48 * 3600 * 1000;
 const COOLDOWN = 8 * 3600 * 1000;
@@ -400,6 +402,7 @@ const state = {
   list: loadList(),
   data: {},
   track: loadTrack(),
+  paper: loadPaper(),
   tvId: "BTC-USDT-SWAP",
   tf: "candle5m",
   sort: "watch",
@@ -449,6 +452,24 @@ function loadTrack() {
 }
 function saveTrack() {
   localStorage.setItem(TRACK_KEY, JSON.stringify(state.track.slice(-240)));
+}
+function defaultPaper() {
+  return { bank: BANK0, positions: {}, closes: [], resets: 0 };
+}
+function loadPaper() {
+  try {
+    const raw = localStorage.getItem(PAPER_KEY);
+    const o = raw ? JSON.parse(raw) : null;
+    if (o && typeof o.bank === "number") {
+      o.positions = o.positions || {};
+      o.closes = o.closes || [];
+      return o;
+    }
+  } catch {}
+  return defaultPaper();
+}
+function savePaper() {
+  localStorage.setItem(PAPER_KEY, JSON.stringify(state.paper));
 }
 
 function toInstId(raw) {
@@ -838,6 +859,12 @@ function cardHtml(id) {
         <div class="event-avg">${eventAvgHtml(d.events)}</div>
       </div>
       <div class="ai">${predictHtml(id)}</div>
+      <div class="trade-bar">
+        <button type="button" class="long" data-open="long" data-id="${id}">开多</button>
+        <button type="button" class="short" data-open="short" data-id="${id}">开空</button>
+        <button type="button" data-addm="${id}">加保证金</button>
+        <button type="button" data-close="${id}">平仓</button>
+      </div>
     </article>`;
 }
 
@@ -1072,14 +1099,145 @@ function fmtDecisionTs(ts) {
   return new Date(ts).toLocaleString("zh-CN", { hour12: false, month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" });
 }
 const LEVERAGE = 50;
+function usedMargin() {
+  return Object.values(state.paper.positions).reduce((s,p)=>s+(p.margin||0),0);
+}
+function paperAvail() {
+  return Math.max(0, state.paper.bank);
+}
+function paperUpl(p, px) {
+  if (!p || !px) return 0;
+  const chg = p.side === "long" ? (px - p.entry) / p.entry : (p.entry - px) / p.entry;
+  return p.margin * LEVERAGE * chg;
+}
+function paperEquity() {
+  let eq = state.paper.bank;
+  Object.keys(state.paper.positions).forEach(id => {
+    const p = state.paper.positions[id];
+    const px = state.data[id] && state.data[id].last;
+    eq += p.margin + paperUpl(p, px);
+  });
+  return eq;
+}
+function readMargin() {
+  const n = Number(document.getElementById("marginInput") && document.getElementById("marginInput").value);
+  return isFinite(n) && n > 0 ? n : 100;
+}
+function openPaper(id, side) {
+  const px = state.data[id] && state.data[id].last;
+  if (!px) return alert("还没有价格");
+  if (state.paper.positions[id]) return alert("该币已有仓，请先平仓");
+  const mgn = Math.min(readMargin(), paperAvail(), BANK0);
+  if (mgn < 1) return alert("可用保证金不足");
+  if (mgn > paperAvail()) return;
+  state.paper.bank -= mgn;
+  state.paper.positions[id] = { id, side, entry: px, margin: mgn, ts: Date.now(), lev: LEVERAGE };
+  savePaper();
+  renderPaper();
+  render();
+}
+function addPaperMargin(id) {
+  const p = state.paper.positions[id];
+  if (!p) return alert("没有持仓");
+  const extra = Math.min(readMargin(), paperAvail());
+  if (extra < 1) return alert("可用不足或超出本金");
+  state.paper.bank -= extra;
+  p.margin += extra;
+  savePaper();
+  renderPaper();
+  render();
+}
+function closePaper(id, reason) {
+  const p = state.paper.positions[id];
+  if (!p) return;
+  const px = (state.data[id] && state.data[id].last) || p.entry;
+  const upl = reason === "liq" ? -p.margin : paperUpl(p, px);
+  const pnl = reason === "liq" ? -p.margin : upl;
+  const ret = p.margin ? pnl / p.margin * 100 : 0;
+  const win = pnl > 0;
+  state.paper.bank += reason === "liq" ? 0 : (p.margin + pnl);
+  if (state.paper.bank < 0) state.paper.bank = 0;
+  state.paper.closes.unshift({
+    id, side: p.side, entry: p.entry, close: px, margin: p.margin,
+    pnl, ret, win, reason: reason || "close", ts: Date.now()
+  });
+  state.paper.closes = state.paper.closes.slice(0, 200);
+  delete state.paper.positions[id];
+  if (paperEquity() <= 1 && !Object.keys(state.paper.positions).length) {
+    state.paper.bank = BANK0;
+    state.paper.resets = (state.paper.resets || 0) + 1;
+  }
+  savePaper();
+  renderPaper();
+  render();
+}
+function checkLiq(id) {
+  const p = state.paper.positions[id];
+  const px = state.data[id] && state.data[id].last;
+  if (!p || !px) return;
+  const liq = liqPx(p.side, p.entry);
+  if (p.side === "long" && px <= liq) closePaper(id, "liq");
+  if (p.side === "short" && px >= liq) closePaper(id, "liq");
+}
+function bestCoin(hours) {
+  const cut = Date.now() - hours * 3600000;
+  const map = {};
+  state.paper.closes.filter(x => x.ts >= cut).forEach(x => {
+    const k = x.id;
+    if (!map[k]) map[k] = { w:0, n:0 };
+    map[k].n += 1;
+    if (x.win) map[k].w += 1;
+  });
+  let best = null;
+  Object.keys(map).forEach(id => {
+    if (map[id].n < 1) return;
+    const wr = map[id].w / map[id].n;
+    if (!best || wr > best.wr || (wr === best.wr && map[id].n > best.n)) {
+      best = { id, wr, n: map[id].n, w: map[id].w };
+    }
+  });
+  return best;
+}
+function renderPaper() {
+  const eq = paperEquity();
+  const av = paperAvail();
+  const um = usedMargin();
+  const realized = state.paper.closes.reduce((s,x)=>s+x.pnl,0);
+  const set = (id, t) => { const el = document.getElementById(id); if (el) el.textContent = t; };
+  set("eqVal", eq.toFixed(1) + " / " + av.toFixed(1));
+  set("mgnVal", um.toFixed(1));
+  const pnlEl = document.getElementById("pnlVal");
+  if (pnlEl) {
+    pnlEl.textContent = (realized >= 0 ? "+" : "") + realized.toFixed(1);
+    pnlEl.className = "v " + (realized >= 0 ? "up" : "down");
+  }
+  const b24 = bestCoin(24), b48 = bestCoin(48);
+  set("best24", b24 ? baseOf(b24.id) + " " + Math.round(b24.wr*100) + "%/" + b24.n : "--");
+  set("best48", b48 ? baseOf(b48.id) + " " + Math.round(b48.wr*100) + "%/" + b48.n : "--");
+  const last = state.paper.closes[0];
+  set("wrLast", last ? (baseOf(last.id) + " " + (last.win?"赢":"输") + " " + last.pnl.toFixed(1)) : "--");
+}
 function liqPx(side, entry) {
   if (!entry) return NaN;
   return side === "long" ? entry * (1 - 1 / LEVERAGE) : entry * (1 + 1 / LEVERAGE);
 }
+function paperLine(id) {
+  const p = state.paper.positions[id];
+  const last = state.data[id] && state.data[id].last;
+  if (!p) {
+    const c = state.paper.closes.find(x => x.id === id);
+    if (!c) return `模拟仓：空仓　点下方开多/开空`;
+    return `上次平仓 ${c.reason==="liq"?"强平":"平仓"} ${fmtPx(c.close)}　收益 ${c.pnl.toFixed(2)}U　收益率 ${fmtChg(c.ret)}　${c.win?"赢":"输"}`;
+  }
+  const upl = paperUpl(p, last);
+  const ret = p.margin ? upl / p.margin * 100 : 0;
+  return `持仓 ${p.side==="long"?"多":"空"} ${LEVERAGE}x　保证金 ${p.margin.toFixed(1)}U　开仓 ${fmtPx(p.entry)}　时间 ${fmtDecisionTs(p.ts)}　浮盈 ${upl.toFixed(2)}U (${fmtChg(ret)})　强平 ${fmtPx(liqPx(p.side, p.entry))}`;
+}
 function posHtml(id, last, sideTxt, side) {
   const pos = openPos(id);
+  const paper = paperLine(id);
   if (!pos) {
-    return `本决策：<b class="${side==='long'?'up':side==='short'?'down':''}">${sideTxt}</b>　按 ${LEVERAGE}x 计价　开仓均价 --　时间 --`;
+    return `${paper}<br>建议：<b class="${side==='long'?'up':side==='short'?'down':''}">${sideTxt}</b>`;
   }
   const dir = pos.side === "long" ? "开多" : "开空";
   const cls = pos.side === "long" ? "up" : "down";
@@ -1090,7 +1248,7 @@ function posHtml(id, last, sideTxt, side) {
   const liq = liqPx(pos.side, pos.avg);
   const pxTxt = isFinite(pxChg) ? `<span class="${pxChg>=0?'up':'down'}">${fmtChg(pxChg)}</span>` : "--";
   const levTxt = isFinite(levPnl) ? `<span class="${levPnl>=0?'up':'down'}">${fmtChg(levPnl)}</span>` : "--";
-  return `本决策：<b class="${cls}">${dir} ${LEVERAGE}x</b>　时间 ${fmtDecisionTs(pos.ts)}　开仓价 ${fmtPx(pos.entry)}　均价 ${fmtPx(pos.avg)}${pos.n>1?" ·"+pos.n+"笔":""}　价变 ${pxTxt}　保证金盈亏 ${levTxt}　参考强平 ${fmtPx(liq)}`;
+  return `${paper}<br>建议：<b class="${cls}">${dir} ${LEVERAGE}x</b>　时间 ${fmtDecisionTs(pos.ts)}　开仓价 ${fmtPx(pos.entry)}　均价 ${fmtPx(pos.avg)}　价变 ${pxTxt}　50x ${levTxt}`;
 }
 function trackStats(id) {
   const rows = state.track.filter(x => !id || x.id === id);
@@ -1110,18 +1268,7 @@ function trackStats(id) {
 }
 function renderTrack() {
   settleTrack();
-  const g = trackStats();
-  const wr24 = document.getElementById("wr24");
-  if (!wr24) return;
-  wr24.textContent = g.wr24;
-  document.getElementById("wr48").textContent = g.wr48;
-  document.getElementById("wrLong").textContent = g.wrLong;
-  document.getElementById("wrShort").textContent = g.wrShort;
-  document.getElementById("wrN").textContent = g.done + " / " + g.pending;
-  const last = state.track[state.track.length - 1];
-  document.getElementById("wrLast").innerHTML = last
-    ? `<span class="${last.side==='long'?'up':'down'}">${last.side==='long'?'开多':'开空'} ${baseOf(last.id)}</span><div style="font-size:12px;font-weight:600;margin-top:2px">${fmtPx(last.entry)}</div>`
-    : "--";
+  renderPaper();
 }
 
 function applyTrade(t) {
@@ -1235,6 +1382,7 @@ function applyTicker(t) {
   d.vol24h = Number(t.vol24h);
   d.bid = Number(t.bidPx);
   d.ask = Number(t.askPx);
+  checkLiq(t.instId);
 }
 
 function applyCandle(instId, row) {
@@ -1705,14 +1853,14 @@ document.getElementById("resetBtn").onclick = () => {
   render();
 };
 document.getElementById("clearTrackBtn").onclick = () => {
-  if (!confirm("清空本地研判战绩？")) return;
+  if (!confirm("清空研判战绩和模拟盘？本金回到 1000U")) return;
   state.track = [];
+  state.paper = defaultPaper();
   saveTrack();
+  savePaper();
   renderTrack();
-};
-document.getElementById("tvToggle").onclick = () => {
-  const dock = document.getElementById("tvDock");
-  setTvOpen(dock.classList.contains("collapsed"));
+  renderPaper();
+  render();
 };
 document.getElementById("copyLinkBtn").onclick = async () => {
   writeHash();
@@ -1733,28 +1881,45 @@ document.getElementById("tfSelect").onchange = e => {
   subscribeBusiness();
   bootstrapRest();
   render();
-  mountTV(state.tvId);
 };
 document.getElementById("sortSelect").onchange = e => {
   state.sort = e.target.value;
   render();
 };
 document.getElementById("grid").addEventListener("click", e => {
-  const btn = e.target.closest("[data-del]");
-  if (btn) {
+  const del = e.target.closest("[data-del]");
+  if (del) {
     e.preventDefault();
     e.stopPropagation();
-    removeSymbol(btn.getAttribute("data-del"));
+    removeSymbol(del.getAttribute("data-del"));
+    return;
+  }
+  const open = e.target.closest("[data-open]");
+  if (open) {
+    e.preventDefault();
+    e.stopPropagation();
+    openPaper(open.getAttribute("data-id"), open.getAttribute("data-open"));
+    return;
+  }
+  const addm = e.target.closest("[data-addm]");
+  if (addm) {
+    e.preventDefault();
+    e.stopPropagation();
+    addPaperMargin(addm.getAttribute("data-addm"));
+    return;
+  }
+  const cl = e.target.closest("[data-close]");
+  if (cl) {
+    e.preventDefault();
+    e.stopPropagation();
+    closePaper(cl.getAttribute("data-close"), "close");
     return;
   }
   const card = e.target.closest(".card");
   if (card && card.dataset.id) {
     state.tvId = card.dataset.id;
-    const dock = document.getElementById("tvDock");
-    if (dock && !dock.classList.contains("collapsed")) mountTV(state.tvId);
     const lab = document.getElementById("tvLabel");
     if (lab) lab.textContent = tvSymbol(state.tvId);
-    render();
   }
 });
 
@@ -1781,7 +1946,8 @@ connect();
 bootstrapRest();
 loadIntel();
 setInterval(loadIntel, 180000);
-setTvOpen(false);
+renderPaper();
+mountTvExtras();
 </script>
 </body>
 </html>
