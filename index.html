@@ -66,15 +66,16 @@
     .chip:hover { color: var(--text); border-color: #4a5870; }
     .meta { padding: 8px 18px; color: var(--muted); font-size: 12px; display: flex; gap: 16px; flex-wrap: wrap; }
     .grid {
-      display: grid; gap: 10px; padding: 8px 18px 28px;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      display: grid; gap: 8px; padding: 6px 12px 16px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
     }
     .card {
       background: linear-gradient(180deg, var(--card), #131924);
-      border: 1px solid var(--line); border-radius: 14px; padding: 14px;
+      border: 1px solid var(--line); border-radius: 12px;
       box-shadow: 0 8px 24px rgba(0,0,0,.18); cursor: pointer;
-      padding: 10px 12px;
+      padding: 8px 10px;
     }
+    .card-main { display:block; }
     .card.active { border-color: #4c8dff; box-shadow: 0 0 0 1px #4c8dff55; }
     .card-head { display: flex; align-items: center; gap: 10px; }
     .icon {
@@ -94,24 +95,24 @@
       position: relative; z-index: 2;
     }
     .remove:hover { color: var(--red); }
-    .price-row { display: flex; justify-content: space-between; align-items: baseline; margin-top: 10px; }
-    .last { font-size: 22px; font-weight: 700; letter-spacing: .3px; }
-    .chg { font-size: 14px; font-weight: 700; text-align: right; }
-    .chg small { display:block; font-size:10px; font-weight:500; color:var(--muted); margin-top:2px; }
+    .price-row { display: flex; justify-content: space-between; align-items: baseline; margin-top: 4px; }
+    .last { font-size: 20px; font-weight: 700; letter-spacing: .3px; }
+    .chg { font-size: 13px; font-weight: 700; text-align: right; }
+    .chg small { display:block; font-size:10px; font-weight:500; color:var(--muted); margin-top:1px; }
     .up { color: var(--up); }
     .down { color: var(--down); }
-    .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 10px; font-size: 12px; color: var(--muted); }
-    .stats b { display: block; color: var(--text); margin-top: 2px; font-size: 12.5px; font-weight: 600; }
-    canvas { display: block; width: 100%; height: 138px; margin: 0; background: transparent; }
-    .levels { margin-top: 8px; padding: 8px; border-radius: 8px; background: #10151f; border: 1px solid var(--line); }
-    .levels .h { font-size: 11px; color: var(--muted); margin-bottom: 6px; }
-    .levels .g { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; font-size: 11px; color: var(--muted); }
-    .levels b { color: var(--text); }
+    .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px 8px; margin-top: 6px; font-size: 11px; color: var(--muted); }
+    .stats b { display: block; color: var(--text); margin-top: 1px; font-size: 12px; font-weight: 600; }
+    canvas { display: block; width: 100%; height: 96px; margin: 0; background: transparent; }
+    .levels { margin-top: 6px; padding: 6px 8px; border-radius: 8px; background: #10151f; border: 1px solid var(--line); }
+    .levels .h { font-size: 11px; color: var(--muted); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .levels .g { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; font-size: 11px; color: var(--muted); }
+    .levels b { display:block; color: var(--text); font-size:12px; margin-top:2px; }
     .levels .pref { font-weight: 700; }
-    .chart-box { margin-top: 8px; background: #10151f; border-radius: 8px; overflow: hidden; }
+    .chart-box { margin-top: 6px; background: #10151f; border-radius: 8px; overflow: hidden; }
     .book {
       display: grid; grid-template-columns: 1fr 1fr; gap: 0 10px;
-      margin-top: 6px; padding: 6px 8px;
+      margin-top: 6px; padding: 5px 8px;
       background: #10151f; border-radius: 8px;
       font-size: 11px; color: var(--muted);
     }
@@ -119,40 +120,44 @@
     .book .row { display: flex; justify-content: space-between; gap: 6px; }
     .book .row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .book .hd { font-size: 10px; color: #6b778c; margin-bottom: 2px; }
-    .flow { margin-top: 10px; }
-    .flow-bar { height: 8px; border-radius: 99px; background: #2a3344; overflow: hidden; display: flex; }
+    .flow { margin-top: 6px; }
+    .flow-bar { height: 6px; border-radius: 99px; background: #2a3344; overflow: hidden; display: flex; }
     .flow-bar .buy { background: var(--green); height: 100%; }
     .flow-bar .sell { background: var(--red); height: 100%; }
-    .flow-meta { display: flex; justify-content: space-between; font-size: 12px; margin-top: 6px; color: var(--muted); }
-    .alert-row { display: grid; grid-template-columns: 1.15fr .85fr; gap: 8px; margin-top: 8px; }
+    .flow-meta { display: flex; justify-content: space-between; font-size: 11px; margin-top: 4px; color: var(--muted); }
+    .alert-row { display: block; margin-top: 6px; }
     .alerts {
-      max-height: 58px; overflow: auto;
-      font-size: 11px; line-height: 1.4; color: var(--muted);
+      max-height: 64px; overflow: auto;
+      font-size: 11px; line-height: 1.45; color: var(--muted);
+      white-space: nowrap;
     }
     .book b { font-weight:600; color: var(--text); }
-    .mini-row { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:6px; font-size:11px; color:var(--muted); margin-top:6px; }
-    .heat { display:flex; flex-wrap:wrap; gap:4px; }
+    .mini-row { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:4px; font-size:11px; color:var(--muted); margin-top:4px; }
+    .heat { display:flex; flex-direction:column; gap:6px; }
+    .heat-row { display:flex; flex-wrap:wrap; gap:4px; }
     .heat i { display:block; min-width:46px; padding:6px 4px; border-radius:6px; text-align:center; font-size:11px; font-style:normal; color:#fff; }
-    .fund-list, .liq-list, .rs-list { font-size:12px; line-height:1.7; max-height:148px; overflow:auto; }
-    .tv-mini { margin-top:8px; height:228px; border-radius:8px; overflow:hidden; background:#10151f; }
-    .tv-mini iframe { width:100%; height:228px; border:0; display:block; }
+    .fund-list, .liq-list, .rs-list { font-size:12px; line-height:1.55; max-height:92px; overflow:auto; }
+    .tv-line { margin-top:8px; font-size:12px; color:var(--muted); }
+    .tv-line b { font-size:13px; }
     .cal-dock { margin:10px 18px 0; background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden; }
-    .cal-dock.collapsed .cal-body { display:none; }
-    .cal-body { min-height:360px; }
+    .cal-dock.collapsed { display:none; }
+    .cal-body, .cal-body iframe { width:100%; height:420px; border:0; display:block; }
     .intel {
       display:grid; grid-template-columns: repeat(4, minmax(0,1fr));
       gap:10px; padding:10px 18px 0;
     }
     .event-avg {
-      background: #10151f; border: 1px solid var(--line); border-radius: 8px; padding: 8px;
-      font-size: 11.5px; color: var(--muted);
+      background: #10151f; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px;
+      font-size: 11px; color: var(--muted); margin-bottom: 6px;
     }
-    .event-avg .h { margin-bottom: 6px; color: var(--text); font-weight: 650; }
-    .event-avg .g { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-    .event-avg b { display: block; color: var(--text); margin-top: 2px; }
-    .alerts .buy { color: var(--green); }
-    .alerts .sell { color: var(--red); }
-    .alerts .hot { color: var(--gold); }
+    .avg-table { width:100%; border-collapse:collapse; table-layout:fixed; }
+    .avg-table th, .avg-table td { padding:3px 4px; text-align:right; font-weight:600; }
+    .avg-table th { color:var(--muted); font-weight:500; font-size:10px; }
+    .avg-table td:first-child, .avg-table th:first-child { text-align:left; }
+    .alerts .buy { color: #8ee0b8; }
+    .alerts .sell { color: #f7a8b0; }
+    .alerts .huge-buy { color: #0b7a4b; font-weight: 700; }
+    .alerts .huge-sell { color: #b4232e; font-weight: 700; }
     .feed {
       margin: 8px 18px 0; background: var(--card); border: 1px solid var(--line);
       border-radius: 12px; padding: 10px 12px; max-height: 148px; overflow: auto;
@@ -167,10 +172,11 @@
     .ai-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
     .ai-title { font-size: 12px; color: var(--muted); }
     .ai-bias { font-size: 16px; font-weight: 800; }
-    .ai-range { margin-top: 6px; font-size: 12px; color: var(--muted); }
-    .ai-strats { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 5px; }
+    .ai { margin-top: 6px; padding: 7px 8px; }
+    .ai-range { margin-top: 4px; font-size: 11px; color: var(--muted); }
+    .ai-strats { margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px; }
     .tag {
-      font-size: 11px; padding: 2px 7px; border-radius: 999px;
+      font-size: 10px; padding: 1px 6px; border-radius: 999px;
       border: 1px solid #334056; color: var(--muted);
     }
     .tag.up { border-color: rgba(32,201,151,.4); }
@@ -196,7 +202,8 @@
     .tbox { background:#10151f; border-radius:10px; padding:8px 10px; }
     .tbox .k { font-size:11px; color:var(--muted); }
     .tbox .v { font-size:18px; font-weight:800; margin-top:3px; }
-    .ai-track { margin-top:8px; font-size:12px; color:var(--muted); }
+    .ai-track { margin-top:4px; font-size:11px; color:var(--muted); }
+    .tv-line { margin-top:4px; font-size:11px; }
     @media (max-width: 900px) { .track-grid { grid-template-columns: 1fr 1fr 1fr; } .track { margin-left:12px; margin-right:12px; } }
     .overview {
       display: grid; gap: 10px; padding: 10px 18px 0;
@@ -220,7 +227,7 @@
     .d-eth { background:#4c8dff; }
     .d-oth { background:#6b778c; }
     .ov-row { display:flex; justify-content:space-between; gap:8px; font-size:12px; color:var(--muted); margin-top:8px; }
-    @media (max-width: 1280px) {
+    @media (max-width: 1100px) {
       .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .intel { grid-template-columns: 1fr 1fr; }
     }
@@ -238,7 +245,8 @@
       .status { margin-left: 0; width: 100%; }
       .chips, .meta, .feed, .grid, footer { padding-left: 12px; padding-right: 12px; }
       .grid { grid-template-columns: 1fr; }
-      canvas { height: 120px; }
+      .card-main { grid-template-columns: 1fr; }
+      canvas { height: 100px; }
       .intel { grid-template-columns: 1fr; }
       .tv-extras { grid-template-columns: 1fr; }
       .last { font-size: 22px; }
@@ -253,7 +261,7 @@
       <div class="logo"><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSMrsLyTdKs3pOW7r0ARdiDxp8E59moIysRs6GFIEn6pg&s=10" alt="logo" referrerpolicy="no-referrer"/></div>
       <div>
         <h1>OKX 永续合约看板</h1>
-        <p>默认 BTC / ETH，其余自己添加</p>
+        <p>默认 BTC / ETH / BNB，其余自己添加</p>
       </div>
     </div>
     <div class="toolbar">
@@ -273,7 +281,7 @@
         <option value="chgAsc">涨幅从低到高</option>
         <option value="vol">成交量从高到低</option>
       </select>
-      <button class="ghost" id="resetBtn">只留 BTC/ETH</button>
+      <button class="ghost" id="resetBtn">只留默认</button>
       <button class="ghost" id="copyLinkBtn">复制同步链接</button>
       <button class="ghost" id="calToggle">财经日历</button>
     </div>
@@ -325,7 +333,7 @@
       <div class="fund-list" id="fundList">加载中</div>
     </div>
     <div class="obox">
-      <div class="olabel">自选涨跌热力图 · 相对早8点</div>
+      <div class="olabel">自选涨跌热力图 · 首行默认币 · 相对早8点</div>
       <div class="heat" id="heatMap">加载中</div>
     </div>
     <div class="obox">
@@ -358,8 +366,8 @@ const H24 = 24 * 3600 * 1000;
 const H48 = 48 * 3600 * 1000;
 const COOLDOWN = 8 * 3600 * 1000;
 
-const DEFAULTS = ["BTC-USDT-SWAP", "ETH-USDT-SWAP"];
-const PINNED = ["BTC-USDT-SWAP", "ETH-USDT-SWAP"];
+const DEFAULTS = ["BTC-USDT-SWAP", "ETH-USDT-SWAP", "BNB-USDT-SWAP"];
+const PINNED = ["BTC-USDT-SWAP", "ETH-USDT-SWAP", "BNB-USDT-SWAP"];
 function isPinned(id) { return PINNED.includes(id); }
 function pinFront(list) {
   const rest = (list || []).filter(id => !isPinned(id));
@@ -806,7 +814,7 @@ function cardHtml(id) {
         <span>多空比 <b>${d.lsRatio != null ? Number(d.lsRatio).toFixed(2) : "--"}</b></span>
         <span>结算 <b>${fundEtaShort(d.nextFund)}</b></span>
       </div>
-      <div class="chart-box"><canvas data-chart="${id}" width="720" height="200"></canvas></div>
+      <div class="chart-box"><canvas data-chart="${id}" width="720" height="160"></canvas></div>
       <div class="levels">${levelsHtml(id)}</div>
       <div class="book">${bookHtml(d)}</div>
       <div class="flow">
@@ -818,11 +826,10 @@ function cardHtml(id) {
         </div>
       </div>
       <div class="alert-row">
-        <div class="alerts">${eventsHtml(d.events)}</div>
         <div class="event-avg">${eventAvgHtml(d.events)}</div>
+        <div class="alerts">${eventsHtml(d.events)}</div>
       </div>
       <div class="ai">${predictHtml(id)}</div>
-      <div class="tv-mini"><iframe title="TA ${base}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="${tvTaSrc(id)}"></iframe></div>
     </article>`;
 }
 
@@ -854,14 +861,8 @@ function sideStats(events, side) {
 function eventAvgHtml(events) {
   const b = sideStats(events, "buy");
   const s = sideStats(events, "sell");
-  const cell = (title, st, cls) => `
-    <div>
-      <div class="${cls}">${title} ${st.n}笔</div>
-      <div>均价 <b>${st.n ? fmtPx(st.vwap) : "--"}</b></div>
-      <div>均量 <b>${st.n ? fmtVol(st.qty) : "--"}</b></div>
-      <div>金额 <b>${st.n ? fmtVol(st.amt) : "--"}</b></div>
-    </div>`;
-  return `<div class="h">异动均价 / 均量 / 金额</div><div class="g">${cell("买单", b, "up")}${cell("卖单", s, "down")}</div>`;
+  const row = (name, st, cls) => `<tr class="${cls}"><td>${name}</td><td>${st.n}</td><td>${st.n?fmtPx(st.vwap):"--"}</td><td>${st.n?fmtVol(st.qty):"--"}</td><td>${st.n?fmtVol(st.amt):"--"}</td></tr>`;
+  return `<table class="avg-table"><thead><tr><th>异动</th><th>笔数</th><th>均价</th><th>均量</th><th>金额</th></tr></thead><tbody>${row("买", b, "up")}${row("卖", s, "down")}</tbody></table>`;
 }
 
 function fmtTime(ts) {
@@ -1006,12 +1007,12 @@ function levelsHtml(id) {
   if (!lv) return `<div class="h">推荐点位</div><div class="g">K线不足，稍后计算</div>`;
   const pref = side === "long" ? "优先做多回踩" : side === "short" ? "优先做空反抽" : "双向都等，不追价";
   const cls = side === "long" ? "up" : side === "short" ? "down" : "";
-  return `<div class="h">点位建议 · EMA回踩 / 通道极值 / ATR加减仓　<span class="pref ${cls}">${pref}</span></div>
+  return `<div class="h">点位 <span class="pref ${cls}">${pref}</span></div>
     <div class="g">
-      <div class="up">开多 ${fmtPx(lv.longOpen)}<b>加仓 ${fmtPx(lv.longAdd)}</b></div>
-      <div class="down">开空 ${fmtPx(lv.shortOpen)}<b>加仓 ${fmtPx(lv.shortAdd)}</b></div>
-      <div>多止损参考 <b>${fmtPx(lv.stopL)}</b></div>
-      <div>空止损参考 <b>${fmtPx(lv.stopS)}</b></div>
+      <div class="up">开多<b>${fmtPx(lv.longOpen)}</b></div>
+      <div class="up">加多<b>${fmtPx(lv.longAdd)}</b></div>
+      <div class="down">开空<b>${fmtPx(lv.shortOpen)}</b></div>
+      <div class="down">加空<b>${fmtPx(lv.shortAdd)}</b></div>
     </div>`;
 }
 function predict(id) {
@@ -1097,7 +1098,15 @@ function predict(id) {
   return { lean, side, conf, html: `<div class="ai-top"><div class="ai-title">24-48小时综合研判 · ${env} · ${agree}条同向 · 方向分 ${lean}</div><div class="ai-bias ${cls}">${bias} ${conf}%</div></div>
     <div class="ai-range">参考波动带（非目标价）　24h ${fmtPx(last-a*1.15)} ~ ${fmtPx(last+a*1.15)}　·　48h ${fmtPx(last-a*1.7)} ~ ${fmtPx(last+a*1.7)}</div>
     <div class="ai-strats">${tags}</div>
-    <div class="ai-track">${posHtml(id, last, sideTxt, side)}　本币24h胜率 ${local.wr24}　48h胜率 ${local.wr48}</div>` };
+    <div class="ai-track">${posHtml(id, last, sideTxt, side)}　本币24h胜率 ${local.wr24}　48h胜率 ${local.wr48}</div>
+    <div class="tv-line">技术分析 · 1小时　<b class="${tvTone(lean).cls}">${tvTone(lean).text}</b></div>` };
+}
+function tvTone(lean) {
+  if (lean >= 80) return { text: "强烈买入", cls: "up" };
+  if (lean >= 60) return { text: "买入", cls: "up" };
+  if (lean <= 20) return { text: "强烈卖出", cls: "down" };
+  if (lean <= 40) return { text: "卖出", cls: "down" };
+  return { text: "中性", cls: "" };
 }
 function predictHtml(id) { return predict(id).html; }
 
@@ -1223,7 +1232,7 @@ function applyTrade(t) {
   const kind = side === "buy"
     ? (huge ? "超大买单扫货" : "大额买单")
     : (huge ? "超大卖单砸盘" : "大额卖单");
-  const cls = huge ? "hot" : side;
+  const cls = huge ? (side === "buy" ? "huge-buy" : "huge-sell") : side;
   const text = `${fmtTime(ts)} ${kind} ${fmtPx(px)} × ${fmtVol(sz)}`;
   d.events.unshift({ ts, cls, text, side, px, sz, notional });
   d.events = d.events.slice(0, 20);
@@ -1499,19 +1508,32 @@ function barOf(ch) {
 function tvSymbol(id) {
   return "OKX:" + baseOf(id) + "USDT.P";
 }
+function tvEmbedSrc(kind, cfg) {
+  return "https://www.tradingview-widget.com/embed-widget/" + kind + "/?locale=" + (cfg.locale || "zh_CN") + "#" + encodeURIComponent(JSON.stringify(cfg));
+}
 function tvTaSrc(id) {
-  const cfg = encodeURIComponent(JSON.stringify({
-    interval: "60",
+  return tvEmbedSrc("technical-analysis", {
+    interval: "1h",
     width: "100%",
-    height: 220,
+    height: 176,
     isTransparent: true,
     symbol: tvSymbol(id),
-    showIntervalTabs: true,
+    showIntervalTabs: false,
     displayMode: "single",
     locale: "zh_CN",
     colorTheme: "dark"
-  }));
-  return "https://s.tradingview.com/embed-widget/technical-analysis/?locale=zh_CN#" + cfg;
+  });
+}
+function tvCalSrc() {
+  return tvEmbedSrc("events", {
+    width: "100%",
+    height: 420,
+    colorTheme: "dark",
+    isTransparent: true,
+    locale: "zh_CN",
+    importanceFilter: "-1,0,1",
+    countryFilter: "us,eu,cn"
+  });
 }
 function tvInterval() {
   return ({ candle1m:"1", candle5m:"5", candle15m:"15", candle1H:"60", candle4H:"240", candle1D:"D" }[state.tf] || "15");
@@ -1554,9 +1576,11 @@ function renderIntel() {
   document.getElementById("fundEta").textContent = nexts.length ? fundEtaShort(Math.min(...nexts)) : "--";
 
   const heat = document.getElementById("heatMap");
-  heat.innerHTML = rows.map(x =>
-    `<i style="background:${heatColor(x.chg)}">${baseOf(x.id)}<br>${isFinite(x.chg)?fmtChg(x.chg):"--"}</i>`
-  ).join("") || "--";
+  const cell = x => `<i style="background:${heatColor(x.chg)}">${baseOf(x.id)}<br>${isFinite(x.chg)?fmtChg(x.chg):"--"}</i>`;
+  const core = PINNED.map(id => rows.find(x => x.id === id)).filter(Boolean);
+  const extra = rows.filter(x => !isPinned(x.id));
+  heat.innerHTML = `<div class="heat-row">${core.map(cell).join("")}</div>` +
+    (extra.length ? `<div class="heat-row">${extra.map(cell).join("")}</div>` : "");
 
   const liq = document.getElementById("liqList");
   liq.innerHTML = rows.map(x => {
@@ -1668,16 +1692,15 @@ async function loadIntel() {
 }
 function mountCalendar() {
   const cal = document.getElementById("tvCal");
-  if (!cal || cal.dataset.ready) return;
-  cal.dataset.ready = "1";
-  const s2 = document.createElement("script");
-  s2.src = "https://s3.tradingview.com/external-embedding/embed-widget-events.js";
-  s2.async = true;
-  s2.innerHTML = JSON.stringify({
-    width: "100%", height: 360, colorTheme: "dark", isTransparent: true,
-    locale: "zh_CN", importanceFilter: "0,1", countryFilter: "us,eu,cn"
-  });
-  cal.appendChild(s2);
+  if (!cal) return;
+  if (!cal.querySelector("iframe")) {
+    const f = document.createElement("iframe");
+    f.title = "财经日历";
+    f.loading = "eager";
+    f.referrerPolicy = "origin";
+    f.src = tvCalSrc();
+    cal.appendChild(f);
+  }
 }
 function setCalOpen(open) {
   const dock = document.getElementById("calDock");
