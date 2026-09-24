@@ -1,45 +1,45 @@
 # OKX Perpetual Swap Board / OKX 永续合约看板
 
-Single-file OKX USDT-perp dashboard with a **local 1,000 USDT / 50x paper book that opens and closes by itself** from the 24–48h rule engine.
+Single-file dashboard for watching **OKX USDT perpetual swaps**. No login, no API key, no live orders.
 
-单文件看板。模拟盘本金 1000U、50 倍，**按 24–48 小时研判和推荐点位自动开平仓**，不用手点。
+单文件看盘页，盯 OKX USDT 永续。无需登录和 API Key，不会下单。
 
-**Disclaimer / 声明：** Not live trading. Not investment advice.
-
----
-
-## Auto paper / 自动模拟
-
-1. Direction score ≥60 → look for **long** at the suggested 开多 price (EMA / mid pullback).  
-2. Score ≤40 → look for **short** at the suggested 开空 price.  
-3. 41–59 → stay flat.  
-4. If price reaches the **加仓** level once, the system may add margin (still ≤ cash and ≤ 1000).  
-5. Close when: opposite signal, take-profit at the other side’s open level, **24h** timeout, or **liquidation** (~2% adverse at 50x).  
-6. Each close stores price, USDT PnL, return on margin. Loss or liq = 输.  
-7. If the book is wiped, bank resets to **1000U** and it hunts again.  
-8. 24h / 48h boxes show the **coin with the best close win-rate**.  
-9. Same coin waits **8 hours** after a close before a new auto entry.
-
-顶栏「自动保证金 U」只决定每笔自动开仓用多少钱，默认 100。
+**Disclaimer / 声明：** Market-watching only. Not trading advice. Not official OKX or TradingView.
 
 ---
 
-## Also on the page / 其它
+## What is on the page / 页面有什么
 
-- Session % vs 08:00 UTC+8, mini candles with prices  
-- Funding, heatmap, recent liquidations, vs-BTC  
-- TradingView **TA + events only** (no big chart)  
-- Four cards per row on a wide screen  
-- BTC / ETH pinned  
+1. Toolbar — add/remove symbols, timeframe, sort, reset to BTC/ETH, copy sync URL  
+2. TradingView TA widget inside each card; economic calendar is collapsed until you open it  
+3. Market overview — Fear & Greed, altseason estimate, cap, dominance, OKX OI  
+4. Rule-based 24–48h outlook stats (not a 1000U paper account)  
+5. Funding ranks, session heatmap, recent liquidations, strength vs BTC  
+6. Four compact contract cards per row on a wide screen  
+
+BTC-USDT-SWAP and ETH-USDT-SWAP stay pinned first.
 
 ---
 
-## Run
+## Cards / 卡片
 
-Upload as `index.html` + this `README.md` on GitHub Pages, or:
+- Last price and change vs **08:00 Beijing time (UTC+8)**  
+- 24h high / low / volume, funding, OI, OI change, long/short ratio  
+- Mini candles with last / high / low and suggested long-short levels  
+- Top-of-book, taker flow, large-print alerts  
+- Rule vote: EMA, RSI, channel, momentum, funding, flow, plus ADX regime weights, OI vs price, strength vs BTC, 4H structure  
+- Direction score: ≥60 lean long, ≤40 lean short, otherwise flat  
+
+There is **no** 1,000 USDT / 50x auto paper book anymore.
+
+---
+
+## Run / 打开
 
 ```bash
 python3 -m http.server 8080
 ```
 
-Watchlist syncs via URL hash. The 1000U book stays in this browser only.
+GitHub Pages: upload as `index.html` plus this `README.md`.
+
+Watchlist syncs through the URL hash from **复制同步链接**.
