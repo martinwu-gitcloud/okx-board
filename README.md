@@ -115,7 +115,7 @@ sudo fail2ban-client status okx-board
 环境变量（可选）：
 
 ```bash
-BOARD_USER=13517601192
+BOARD_USER=初始管理员账户
 BOARD_PASS=你的初始密码
 HOST=0.0.0.0
 PORT=8080
