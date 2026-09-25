@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>登录 · OKX 永续看板</title>
+  <style>
+    :root { --bg:#0b0f16; --card:#151b27; --line:#2a3344; --text:#e8edf5; --muted:#8b97ab; --blue:#4c8dff; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; display: grid; place-items: center;
+      background: radial-gradient(1200px 600px at 20% -10%, #1a2744 0%, var(--bg) 55%);
+      color: var(--text); font-family: "Segoe UI", system-ui, sans-serif;
+    }
+    form {
+      width: min(420px, 92vw); background: var(--card); border: 1px solid var(--line);
+      border-radius: 16px; padding: 28px 24px 22px;
+    }
+    h1 { margin: 0 0 6px; font-size: 20px; }
+    p { margin: 0 0 18px; color: var(--muted); font-size: 13px; }
+    label { display: block; font-size: 12px; color: var(--muted); margin: 12px 0 6px; }
+    input[type=text], input[type=password] {
+      width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line);
+      background: #0f141d; color: var(--text); font-size: 15px;
+    }
+    .row { display: flex; align-items: center; gap: 8px; margin: 14px 0 18px; font-size: 13px; color: var(--muted); }
+    button {
+      width: 100%; border: 0; border-radius: 10px; padding: 11px;
+      background: var(--blue); color: #fff; font-size: 15px; font-weight: 700; cursor: pointer;
+    }
+    .err { min-height: 20px; color: #f05363; font-size: 13px; margin-top: 10px; }
+    .uptime { margin: 10px 0 0; color: #8cb4ff; font-size: 12px; }
+    .legal { margin: 16px auto 0; width: min(420px, 92vw); color: #667085; font-size: 11px; line-height: 1.65; }
+  </style>
+</head>
+<body>
+  <form id="f" autocomplete="on">
+    <h1>OKX 永续合约看板</h1>
+    <p>登录后进入正式页面。可用虚拟机公网 IP 直接访问。</p>
+    <label for="user">账号</label>
+    <input id="user" name="username" type="text" autocomplete="username" required />
+    <label for="pass">密码</label>
+    <input id="pass" name="password" type="password" autocomplete="current-password" required />
+    <div class="row">
+      <input id="remember" type="checkbox" />
+      <label for="remember" style="margin:0">记住登录 30 天（只延长 Cookie，不保存密码）</label>
+    </div>
+    <button type="submit">进入看板</button>
+    <div class="err" id="err"></div>
+    <p class="uptime" id="uptime">本站已稳定运行 --</p>
+  </form>
+  <p class="legal">免责声明：本站仅供学习研究，不构成投资建议。本站解释权归创作者所有，未经允许禁止转载、复制或传播。</p>
+  <script>
+    const LS = "okx_board_login_remember_v1";
+    const USER_LS = "okx_board_login_user_v1";
+    try { localStorage.removeItem(LS); } catch {}
+    try {
+      if (new URLSearchParams(location.search).get("reason") === "expired") {
+        document.getElementById("err").textContent = "账户已到期，请联系管理员续期";
+      }
+    } catch {}
+    try {
+      const savedUser = localStorage.getItem(USER_LS) || "";
+      if (savedUser) {
+        document.getElementById("user").value = savedUser;
+        document.getElementById("remember").checked = true;
+      }
+    } catch {}
+    fetch("/api/uptime").then(r => r.json()).then(j => {
+      const el = document.getElementById("uptime");
+      const born = Number(j.born) || 0;
+      const tick = () => {
+        const sec = Math.max(0, Math.floor(Date.now() / 1000) - born);
+        const d = Math.floor(sec / 86400), h = Math.floor((sec % 86400) / 3600), m = Math.floor((sec % 3600) / 60);
+        el.textContent = "本站已稳定运行 " + (d ? d + "天 " : "") + h + "小时 " + m + "分";
+      };
+      tick();
+      setInterval(tick, 30000);
+    }).catch(() => {});
+    document.getElementById("f").onsubmit = async (e) => {
+      e.preventDefault();
+      const user = document.getElementById("user").value.trim();
+      const pass = document.getElementById("pass").value;
+      const remember = document.getElementById("remember").checked;
+      document.getElementById("err").textContent = "";
+      try {
+        const r = await fetch("/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({ user, pass, remember })
+        });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) {
+          document.getElementById("err").textContent = j.error || "账号或密码错误";
+          return;
+        }
+        try {
+          if (remember) localStorage.setItem(USER_LS, user);
+          else localStorage.removeItem(USER_LS);
+        } catch {}
+        try { localStorage.removeItem("okx_swap_watchlist_v2"); } catch {}
+        location.href = "/board";
+      } catch {
+        document.getElementById("err").textContent = "无法连接登录服务";
+      }
+    };
+  </script>
+</body>
+</html>

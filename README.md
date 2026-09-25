@@ -1,188 +1,140 @@
-# OKX Perpetual Swap Board / OKX 永续合约看板
+# OKX 永续合约看板
 
-Single-file page for watching **OKX USDT-margined perpetual swaps** (`*-USDT-SWAP`). Open the HTML, no login, no API key, no live orders.
+自建看盘站：OKX USDT 永续行情 + 本地规则研判 + 多用户登录门。  
+适合放在 Google Cloud 虚拟机上，用公网 IP 访问，不必买域名。
 
-单文件页面，盯 OKX USDT 永续合约。打开即用，无需登录和 API Key，**不会下单**。
-
-**Disclaimer / 声明：** For market watching only. The 24–48h block is a local rule model, not a bank, broker, or official OKX / TradingView product. Not investment advice.
-
-仅供看盘。底部研判是浏览器里的规则模型，不是券商、不是官方产品，不构成投资建议。
+只看盘，不交易，不是官方产品，不构成投资建议。
 
 ---
 
-## Open / 打开
+## 文件
+
+| 文件 | 作用 |
+| --- | --- |
+| `server.py` | 登录门、代理 OKX、账号与自选、运行时长 |
+| `login.html` | 登录页 |
+| `okx-swap-board.html` | 看板主页 |
+| `admin.html` | 账号管理（管理员 / SVIP） |
+| `data/` | 运行后自动生成，**不要覆盖** |
+
+`data/` 里常见内容：
+
+- `users.json` 账号、角色、有效期、最后登录
+- `watchlists/<账号>.json` 每人本自选
+- `site_born.txt` 本站首次启动时间（运行时长用，重启不清零）
+- `login_guard.json` 登录失败锁定
+- `ip_geo.json` 登录 IP 归属地缓存
+
+---
+
+## 启动
 
 ```bash
-python3 -m http.server 8080
+cd ~/okx-board
+python3 server.py >> board.log 2>&1
 ```
 
-Then visit `http://localhost:8080/okx-swap-board.html`.
+默认监听 `0.0.0.0:8080`。建议放在 tmux 里：
 
-GitHub Pages: upload this file as `index.html` together with this `README.md`. Use `https://`, not `file://`, so OKX WebSocket and the calendar iframe can load.
+```bash
+tmux new -s board
+cd ~/okx-board
+python3 server.py >> board.log 2>&1
+# Ctrl+B 再 D 脱离
+```
 
-用 GitHub Pages 时请把看板存成 `index.html`，和本说明一起上传。请走 https，不要用 `file://`。
+访问：
+
+- 登录 `http://虚拟机公网IP:8080/login`
+- 看板 `/board`
+- 账号管理 `/admin`
+
+更新 HTML / `server.py` 后把文件拷进 `~/okx-board/`。改了 `server.py` 必须停掉再启动；只改 HTML 强制刷新浏览器即可。
 
 ---
 
-## Toolbar / 顶栏
+## 页面功能
 
-| Control / 控件 | What it does / 作用 |
+### 看板
+
+- 默认置顶 BTC / ETH / BNB，一行三张卡片（手机改为单列）
+- 自选、周期（1m～1D）、排序
+- 卡片含：价格与早 8 点涨跌、24h 高低量、资金费率及含义（多头偏多 / 空头偏多 / 均衡）、相对 BTC、持仓 OI、点位、盘口、主动买卖、大单、24–48h 研判
+- 技术分析两行四个周期：15 分钟、1 小时、4 小时、1 天
+- 顶部保留：恐慌贪婪、山寨季、总市值、市值占比、自选热力图、爆仓热力、相对 BTC 强弱（全站资金费率总表已去掉，费率看每张卡片）
+- 财经日历、赞助通道
+- 顶栏：本站已稳定运行、最后修改时间、登录账号、角色、有效期、修改密码
+
+### 登录与账号
+
+| 角色 | 权限 |
 | --- | --- |
-| Symbol box / 输入框 | Type `BTC` or `BTC-USDT-SWAP` |
-| 添加合约 | Add a USDT perp to the watchlist |
-| Timeframe / 周期 | Mini candles: 1m, 5m, 15m, 1H, 4H, 1D |
-| Sort / 排序 | Watchlist order, % change, volume |
-| 只留默认 | Reset to BTC + ETH + BNB |
-| 复制同步链接 | Copy URL with `#BTC-USDT-SWAP,ETH-USDT-SWAP,...` so another device can open the same list |
-| 财经日历 | Toggle TradingView economic calendar (hidden until opened) |
-| Status dots / 状态灯 | Public ticker WS and business candle WS |
+| 管理员 | 全部，永久；可改角色、续期、看密码、批量删除 |
+| SVIP | 看看板 + 添加账号，不能改有效期 |
+| VIP | 只看看板 |
 
-Default list is **BTC-USDT-SWAP, ETH-USDT-SWAP, BNB-USDT-SWAP**. Those three stay pinned first and cannot be removed. Other coins you add sit after them.
+- 新账号默认 1 天有效期，过期提示「账户已到期」，账号不会自动删除
+- 可续 +1 / +15 / +30 天或永久，也可清空有效期
+- 主管理员 `13517601192` 角色锁死，不能改角色、不能删除
+- 每个登录号自选独立，互不串
+- 「记住登录 30 天」只延长 Cookie，不把密码写进浏览器
 
-默认自选是 BTC / ETH / BNB，永远排在最前且不能删除。其它合约自己添加，排在这三个后面。
-
-The watchlist is stored in `localStorage` and in the URL hash when the page is allowed to write history (not inside `about:srcdoc` previews).
-
-自选存在浏览器本地。能改地址栏时也会写进网址 `#` 段，方便电脑改、手机打开同一条链接。
+管理员在账号管理可见：角色、状态、开启时间、有效期、最后登录、IP、归属地、当前密码（旧号若只有哈希，重置一次后才显示明文）。
 
 ---
 
-## Market overview / 市场总览
+## 防护（已接上的）
 
-Four boxes under the toolbar:
+1. 登录 10 分钟内失败 5 次，锁定 15 分钟（按 IP + 账号）
+2. 失败写入 `board.log`，可用 fail2ban 封 IP（jail `okx-board`，封 1 小时）
+3. GCP 防火墙：只把 **tcp:22** 来源改成你的 `公网IP/32`；**tcp:8080 必须保持 `0.0.0.0/0`**，否则外人打不开网站
+4. 建议尽快改掉默认管理员密码
 
-1. **Fear & Greed / 恐慌贪婪指数** — alternative.me style 0–100 gauge  
-2. **Altseason estimate / 山寨季估算** — rough 0–100 from BTC vs alt share  
-3. **Crypto cap & 24h volume / 总市值与成交额**  
-4. **Dominance + OKX OI / 市值占比与 OKX 永续持仓** — BTC / ETH / other, plus BTC and ETH open interest on OKX  
+fail2ban 状态：
 
-These refresh on a timer from public endpoints. If a source is blocked, the box stays `--`.
-
-这些盒子定时拉公共数据。接口被拦时显示 `--`。
-
----
-
-## Intel row / 情报栏
-
-1. **Funding / 资金费率** — watchlist ranked by funding, plus countdown to next funding  
-2. **Session heatmap / 涨跌热力图** — change vs **08:00 Beijing time (UTC+8)**  
-   - Row 1: default coins BTC, ETH, BNB  
-   - Row 2+: coins you added  
-3. **Liquidation heat / 爆仓热力** — recent OKX force-closes, long vs short notional  
-4. **Vs BTC + LS ratio / 相对 BTC 与多空人数比** — session out/underperformance vs BTC, plus long/short account ratio when the public endpoint is reachable  
-
-爆仓和人数比依赖公共接口，偶发跨域失败时该格会空。
+```bash
+sudo fail2ban-client status okx-board
+```
 
 ---
 
-## Contract card / 合约卡片
+## 接口（给维护用）
 
-Wide screens show **three cards per row** (two below ~1100px, one on phones). Each card, top to bottom:
-
-宽屏一行三张（窄屏两张，手机一张）。卡片从上到下：
-
-1. Icon, name, instId; extra coins have ×  
-2. Last price and **session change vs 08:00 UTC+8**  
-3. 24h high / low / volume, funding, strength vs BTC, open interest  
-4. OI change, long/short ratio, next funding countdown  
-5. Mini candlesticks for the selected timeframe, with last / high / low labels and long-short guide lines  
-6. Suggested levels: open-long, add-long, open-short, add-short (EMA pullback + 20-bar channel + ATR)  
-7. Top-of-book, 3 bids and 3 asks  
-8. Taker buy vs sell bar (about the last minute)  
-9. Unusual prints + a small average table  
-10. 24–48h rule block  
-
-Icons try several public CDN paths; if all fail, a letter badge is used.
-
-图标会依次试几个公共源，都失败则显示字母。
-
----
-
-## Unusual prints / 大单异动
-
-Trades that are large versus the recent book mid are listed with time, side, price and size.
-
-相对盘口明显偏大的成交会记入列表。
-
-| Class / 类型 | Color / 颜色 |
+| 路径 | 说明 |
 | --- | --- |
-| Large buy / 大额买单 | Light green / 浅绿 |
-| Large sell / 大额卖单 | Light red / 浅红 |
-| Huge buy / 超大买单扫货 | Dark green / 深绿 |
-| Huge sell / 超大卖单砸盘 | Dark red / 深红 |
+| `POST /api/login` | 登录 |
+| `GET /api/me` | 当前用户 |
+| `POST /api/me/password` | 自己改密 |
+| `GET/PUT /api/watchlist` | 自选 |
+| `GET/POST/PATCH /api/users` | 账号管理 |
+| `POST /api/users/batch-delete` | 批量删除 |
+| `GET /api/uptime` | 运行时长与最后修改时间 |
+| `/okx/api/v5/...` | 代理 OKX REST |
+| `/ext/fng` `/ext/cg` `/ext/cmc` | 指数代理 |
 
-Under the list, a table shows **count, VWAP, average size, and notional** for buy prints vs sell prints in the current buffer.
+环境变量（可选）：
 
-列表下方表格给出当前缓冲里买单 / 卖单的笔数、均价、均量、金额。
+```bash
+BOARD_USER=13517601192
+BOARD_PASS=你的初始密码
+HOST=0.0.0.0
+PORT=8080
+```
 
----
-
-## 24–48h outlook / 综合研判
-
-Local rules only. Votes are **weighted**, not a simple count.
-
-只在本地算，按权重合成，不是每条规则一票到底。
-
-Base votes:
-
-- EMA 12 / 26  
-- RSI 14  
-- 20-bar channel (breakout vs mean-reversion)  
-- 24h / session momentum  
-- Funding crowding  
-- Taker flow  
-
-Extra votes:
-
-- **ADX regime / ADX 环境** — ADX ≥ 25 treats the tape as trend (EMA, momentum, 4H structure get more weight; RSI and mean-reversion get less). ADX ＜ 20 is the opposite.  
-- **OI vs price / 持仓验证** — price up + OI up leans long; price down + OI up leans short; price up + OI down weakens the long vote  
-- **Vs BTC / 相对 BTC** — skipped on BTC itself  
-- **4H structure / 4小时结构** — last six 4H bars vs the six before (HH+HL vs LH+LL)  
-
-Direction score is 0–100:
-
-- **≥ 60** → lean long / 开多  
-- **≤ 40** → lean short / 开空  
-- **41–59** → flat / 观望  
-
-The card also stores a local “decision” (side, time, entry, average) and, after 24h / 48h, marks win/loss if price moved more than 0.1% the right way. Same coin, same side, waits 8 hours before another stored decision. Small samples mean nothing.
-
-卡片会记下方向、时间、开仓价。满 24 / 48 小时后按价格涨跌结算；同币同向 8 小时内不重复记账。样本少时胜率没有意义。
-
-The one-line **技术分析 · 1小时** label (强烈买入 / 买入 / 中性 / 卖出 / 强烈卖出) is the same score, not a live TradingView gauge.
-
-最底下那行「技术分析」只是同一套方向分的文字档，不是 TradingView 实时仪表。
-
-There is **no** 1,000 USDT / 50x paper account in this build.
-
-当前版本**没有** 1000U / 50 倍模拟盘。
+未设置时仍使用代码里的种子管理员。种子管理员角色不会被改掉。
 
 ---
 
-## Data / 数据
+## 更新文件时注意
 
-- OKX public WebSocket: tickers, trades, funding, books5, liquidations, candles  
-- OKX public REST on first load (ticker, candles 1H / 4H / 1D, funding)  
-- Overview extras from public market APIs when CORS allows  
-
-Reconnect and ping/pong are handled in the page. No private account endpoints.
-
-页面自己重连和心跳。不碰任何需要登录的接口。
+1. 只覆盖四个源文件，不要覆盖整个 `okx-board/data/`
+2. 浏览器 SSH 上传常变成 `server_(10).py` 这种名字，必须 `cp` 成不带编号的文件名
+3. 拷完核对体积，再重启 `server.py`
+4. 浏览器使用强制刷新（Ctrl+F5）
 
 ---
 
-## What this is not / 不是什么
+## 不做的事
 
-- Not an exchange, broker, or signal service  
-- Does not place, cancel, or copy trades on OKX  
-- Does not promise that the rule score will win  
-- Calendar and some ratios need a normal https origin  
-
----
-
-## Files / 文件
-
-- `okx-swap-board.html` — the whole app  
-- `README.md` — this note  
-
-Keep both when you publish a new version.
+- 不代下单、不接交易 API
+- Telegram Bot 尚未接入（可做提醒与查询，不建议用 Bot 下单）
